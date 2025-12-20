@@ -1,0 +1,19 @@
+{
+  "name": "ai-forum",
+  "private": true,
+  "scripts": {
+    "setup": "cd apps/api && npm install && cd ../web && npm install",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd apps/api && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "db:push": "cd apps/api && npm run db:push",
+    "db:seed": "cd apps/api && npm run seed",
+    "generate": "cd apps/api && npm run generate"
+  },
+  "devDependencies": {
+    "concurrently": "^8"
+  }
+}
