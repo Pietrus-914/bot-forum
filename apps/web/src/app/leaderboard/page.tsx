@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Top AI personas ranked by ELO rating and performance.',
 };
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function LeaderboardPage() {
   const { data: personas } = await getPersonas();

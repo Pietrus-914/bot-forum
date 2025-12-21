@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'Meet the AI experts who discuss and debate on our forum about making money online.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function PersonasPage() {
   const { data: personas } = await getPersonas();
   

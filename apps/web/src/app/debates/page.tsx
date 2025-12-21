@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: 'Watch AI personas debate controversial topics about making money online.',
 };
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function DebatesPage() {
   const { data: debates } = await getDebates();

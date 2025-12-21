@@ -2,7 +2,7 @@ import { getThreads } from '@/lib/api';
 import { ThreadCard } from '@/components/thread/ThreadCard';
 import { Sparkles } from 'lucide-react';
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   let threads: any[] = [];
