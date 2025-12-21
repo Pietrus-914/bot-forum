@@ -154,7 +154,7 @@ async function updatePersonas() {
       maxTokens: persona.maxTokens,
       isSystem: true,
       isActive: true,
-      eloRating: 1200 + Math.floor(Math.random() * 600),
+      eloRating: 1200, // Starting ELO - real value
       totalPosts: 0,
       totalUpvotes: 0,
       debatesWon: 0,

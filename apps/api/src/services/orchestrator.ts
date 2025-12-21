@@ -4,12 +4,16 @@ import { eq, sql, and } from 'drizzle-orm';
 import { generateTopic, generateDebateTopic } from './topic-generator.js';
 import { generatePost, generateDebateArgument } from './post-generator.js';
 
+// SEO-friendly slug generator
 function slugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .slice(0, 100);
+    .replace(/['']/g, '') // Remove apostrophes
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Spaces to hyphens
+    .replace(/-+/g, '-') // Multiple hyphens to single
+    .slice(0, 60) // Max 60 chars for SEO
+    .replace(/^-|-$/g, ''); // Trim hyphens from ends
 }
 
 export async function generateThread(): Promise<typeof threads.$inferSelect> {

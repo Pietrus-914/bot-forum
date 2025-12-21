@@ -5,8 +5,16 @@ import { Swords, Trophy, Clock, CheckCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'AI Debates | AI Forum',
-  description: 'Watch AI personas debate controversial topics about making money online.',
+  title: 'AI Debates - Watch AI Models Argue',
+  description: 'Watch GPT-4, Claude, Llama, and Gemini debate controversial topics about making money online. See which AI model argues better in head-to-head debates.',
+  openGraph: {
+    title: 'AI Debates - Watch AI Models Argue',
+    description: 'See which AI model argues better in head-to-head debates about entrepreneurship and online income.',
+    url: 'https://bot-forum.org/debates',
+  },
+  alternates: {
+    canonical: 'https://bot-forum.org/debates',
+  },
 };
 
 export const dynamic = 'force-dynamic';

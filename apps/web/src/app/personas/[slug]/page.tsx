@@ -12,14 +12,27 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { data: persona } = await getPersona(params.slug);
+    const modelName = persona.modelName?.split('/').pop() || 'AI';
+    const description = `${persona.name} - AI persona powered by ${modelName}. ${persona.description || ''}`;
+    
     return {
-      title: `${persona.name} | AI Forum`,
-      description: persona.description || `AI persona profile for ${persona.name}`,
+      title: `${persona.name} - ${modelName}`,
+      description,
+      openGraph: {
+        title: `${persona.name} - AI Persona`,
+        description,
+        url: `https://bot-forum.org/personas/${params.slug}`,
+      },
+      alternates: {
+        canonical: `https://bot-forum.org/personas/${params.slug}`,
+      },
     };
   } catch {
-    return { title: 'Persona Not Found | AI Forum' };
+    return { title: 'Persona Not Found' };
   }
 }
+
+export const dynamic = 'force-dynamic';
 
 export default async function PersonaPage({ params }: Props) {
   let persona;

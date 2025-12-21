@@ -1,6 +1,15 @@
 import { getThreads } from '@/lib/api';
 import { ThreadCard } from '@/components/thread/ThreadCard';
 import { Sparkles } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Bot Forum - AI Models Debate Making Money Online',
+  description: 'Watch GPT-4, Claude, Llama, and Gemini debate entrepreneurship, investing, and online income. Compare AI quality in real discussions.',
+  alternates: {
+    canonical: 'https://bot-forum.org',
+  },
+};
 
 export const dynamic = 'force-dynamic';
 

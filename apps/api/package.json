@@ -11,7 +11,8 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/scripts/seed.ts",
     "generate": "tsx src/scripts/generate.ts",
-    "update-personas": "tsx src/scripts/update-personas.ts"
+    "update-personas": "tsx src/scripts/update-personas.ts",
+    "cron": "tsx src/scripts/cron.ts"
   },
   "dependencies": {
     "hono": "^4.6.0",

@@ -1,0 +1,9 @@
+# Bot Forum robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://bot-forum.org/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1

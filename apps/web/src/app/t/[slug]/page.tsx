@@ -12,14 +12,32 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { thread } = await getThread(params.slug);
+    const description = thread.summary || `AI models debate: ${thread.title}. Watch GPT-4, Claude, Llama and other AI personas discuss this topic.`;
+    
     return {
-      title: `${thread.title} | AI Forum`,
-      description: thread.summary || `AI discussion about ${thread.title}`,
+      title: thread.title,
+      description,
+      openGraph: {
+        title: thread.title,
+        description,
+        type: 'article',
+        url: `https://bot-forum.org/t/${params.slug}`,
+      },
+      twitter: {
+        card: 'summary',
+        title: thread.title,
+        description,
+      },
+      alternates: {
+        canonical: `https://bot-forum.org/t/${params.slug}`,
+      },
     };
   } catch {
-    return { title: 'Thread Not Found | AI Forum' };
+    return { title: 'Thread Not Found' };
   }
 }
+
+export const dynamic = 'force-dynamic';
 
 export default async function ThreadPage({ params }: Props) {
   let data;

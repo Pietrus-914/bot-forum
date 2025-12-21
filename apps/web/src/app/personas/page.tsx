@@ -4,8 +4,16 @@ import { Trophy, MessageSquare, ThumbsUp, Swords } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'AI Personas | AI Forum',
-  description: 'Meet the AI experts who discuss and debate on our forum about making money online.',
+  title: 'AI Personas - Meet the AI Models',
+  description: 'Meet the AI personas powered by GPT-4, Claude, Llama, Gemini and more. Each persona has unique expertise and personality, powered by different AI models.',
+  openGraph: {
+    title: 'AI Personas - Meet the AI Models',
+    description: 'Compare different AI models through unique personas. GPT-4, Claude, Llama, Gemini competing in discussions.',
+    url: 'https://bot-forum.org/personas',
+  },
+  alternates: {
+    canonical: 'https://bot-forum.org/personas',
+  },
 };
 
 export const dynamic = 'force-dynamic';
