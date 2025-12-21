@@ -1,11 +1,30 @@
 import OpenAI from 'openai';
 
-// Model tiers - balancing cost and quality
-const MODELS = {
-  free: 'meta-llama/llama-3.1-8b-instruct:free', // Free tier
-  cheap: 'meta-llama/llama-3.1-8b-instruct', // ~$0.05/1M tokens
-  balanced: 'meta-llama/llama-3.1-70b-instruct', // ~$0.50/1M tokens
-  quality: 'anthropic/claude-3.5-sonnet', // ~$3/1M tokens
+// Available models through OpenRouter
+export const AVAILABLE_MODELS = {
+  // Anthropic
+  'claude-sonnet': 'anthropic/claude-3.5-sonnet',
+  'claude-haiku': 'anthropic/claude-3-haiku',
+  // Meta
+  'llama-70b': 'meta-llama/llama-3.1-70b-instruct',
+  'llama-8b': 'meta-llama/llama-3.1-8b-instruct',
+  // Mistral
+  'mistral-large': 'mistralai/mistral-large-latest',
+  'mistral-7b': 'mistralai/mistral-7b-instruct',
+  // Google
+  'gemini-pro': 'google/gemini-pro',
+  'gemini-flash': 'google/gemini-flash-1.5',
+  // OpenAI
+  'gpt-4o': 'openai/gpt-4o',
+  'gpt-4o-mini': 'openai/gpt-4o-mini',
+};
+
+// Model tiers for fallback
+const MODEL_TIERS = {
+  free: 'meta-llama/llama-3.1-8b-instruct:free',
+  cheap: 'meta-llama/llama-3.1-8b-instruct',
+  balanced: 'meta-llama/llama-3.1-70b-instruct',
+  quality: 'anthropic/claude-3.5-sonnet',
 };
 
 const openrouter = new OpenAI({
@@ -17,10 +36,12 @@ const openrouter = new OpenAI({
   },
 });
 
-export type ModelTier = keyof typeof MODELS;
+export type ModelTier = keyof typeof MODEL_TIERS;
+export type ModelKey = keyof typeof AVAILABLE_MODELS;
 
 interface CompletionOptions {
   tier?: ModelTier;
+  model?: string; // Direct model string
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;
@@ -32,10 +53,14 @@ export async function complete(
 ): Promise<string> {
   const {
     tier = 'balanced',
+    model,
     maxTokens = 1000,
     temperature = 0.7,
     systemPrompt,
   } = options;
+
+  // Use direct model if provided, otherwise use tier
+  const modelToUse = model || MODEL_TIERS[tier];
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   
@@ -45,8 +70,10 @@ export async function complete(
   messages.push({ role: 'user', content: prompt });
 
   try {
+    console.log(`[AI] Using model: ${modelToUse}`);
+    
     const response = await openrouter.chat.completions.create({
-      model: MODELS[tier],
+      model: modelToUse,
       messages,
       max_tokens: maxTokens,
       temperature,
@@ -54,19 +81,18 @@ export async function complete(
 
     const content = response.choices[0]?.message?.content || '';
     
-    // Log usage for monitoring
     if (response.usage) {
-      console.log(`[AI] ${tier} model - ${response.usage.total_tokens} tokens`);
+      console.log(`[AI] ${modelToUse} - ${response.usage.total_tokens} tokens`);
     }
 
     return content;
   } catch (error: any) {
-    console.error('AI completion error:', error.message);
+    console.error(`AI completion error (${modelToUse}):`, error.message);
     
     // Fallback to cheaper model on error
-    if (tier !== 'free' && tier !== 'cheap') {
-      console.log('Falling back to cheaper model...');
-      return complete(prompt, { ...options, tier: 'cheap' });
+    if (model && tier !== 'free') {
+      console.log('Falling back to tier model...');
+      return complete(prompt, { ...options, model: undefined, tier: 'cheap' });
     }
     
     throw error;
@@ -83,10 +109,8 @@ export async function completeJSON<T>(
     options
   );
   
-  // Clean up response
   let cleaned = result.trim();
   
-  // Remove markdown code blocks if present
   if (cleaned.startsWith('```json')) {
     cleaned = cleaned.slice(7);
   } else if (cleaned.startsWith('```')) {
@@ -106,4 +130,4 @@ export async function completeJSON<T>(
   }
 }
 
-export { MODELS };
+export { AVAILABLE_MODELS as MODELS };

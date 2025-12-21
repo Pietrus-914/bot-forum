@@ -55,7 +55,8 @@ export async function generateThread(): Promise<typeof threads.$inferSelect> {
   }
   
   // 4. Generate opening post
-  console.log(`🎭 Generating opening from ${starterPersona[0].name}...`);
+  const modelShort = starterPersona[0].modelName?.split('/').pop() || 'unknown';
+  console.log(`🎭 Generating opening from ${starterPersona[0].name} (${modelShort})...`);
   const openingContent = await generatePost({
     personaId: starterPersona[0].id,
     topic: topic.title,
@@ -142,14 +143,15 @@ async function generateResponses(
         context += `[${postPersona[0]?.name || 'Unknown'}]:\n${p.content}\n\n---\n\n`;
       }
       
-      console.log(`🎭 Generating response from ${persona[0].name}...`);
+      console.log(`🎭 Generating response from ${persona[0].name} (${persona[0].modelName?.split('/').pop()})...`);
       
-      // Generate response
+      // Generate response with existingPostsCount
       const content = await generatePost({
         personaId: persona[0].id,
         topic,
         context,
         isOpener: false,
+        existingPostsCount: existingPosts.length,
       });
       
       // Create post with offset timestamp (posts come after thread opener)
@@ -191,8 +193,9 @@ async function generateResponses(
   }
 }
 
-export async function createDebate(): Promise<typeof debates.$inferSelect> {
-  console.log('🥊 Creating new debate...');
+export async function createDebate(options?: { rounds?: number }): Promise<typeof debates.$inferSelect> {
+  const totalRounds = options?.rounds || 3; // Default 3 rounds = 6 posts
+  console.log(`🥊 Creating debate (${totalRounds} rounds)...`);
   
   // 1. Generate topic
   const { topic, description, categorySlug } = await generateDebateTopic();
@@ -247,7 +250,7 @@ export async function createDebate(): Promise<typeof debates.$inferSelect> {
       persona1Stance: 'pro',
       persona2Stance: 'con',
       status: 'active',
-      totalRounds: 2,
+      totalRounds,
       currentRound: 1,
     })
     .returning();
@@ -258,10 +261,17 @@ export async function createDebate(): Promise<typeof debates.$inferSelect> {
     .set({ debateId: debate.id })
     .where(eq(threads.id, thread.id));
   
-  // 7. Generate first round
-  await generateDebateRound(debate.id, 1, persona1, persona2, topic, thread.id);
+  // 7. Generate ALL rounds
+  for (let round = 1; round <= totalRounds; round++) {
+    await generateDebateRound(debate.id, round, persona1, persona2, topic, thread.id);
+    
+    // Small delay between rounds
+    if (round < totalRounds) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
   
-  console.log(`✅ Debate created: ${topic}`);
+  console.log(`✅ Debate created: ${topic} (${totalRounds} rounds, ${totalRounds * 2} posts)`);
   return debate;
 }
 
@@ -287,20 +297,25 @@ async function generateDebateRound(
   }
   
   // Generate arguments
-  console.log(`  🎭 ${persona1.name} (PRO)...`);
+  const model1Short = persona1.modelName?.split('/').pop() || 'unknown';
+  const model2Short = persona2.modelName?.split('/').pop() || 'unknown';
+  
+  console.log(`  🎭 ${persona1.name} (PRO) [${model1Short}]...`);
   const arg1 = await generateDebateArgument(
     persona1.id,
     topic,
     'pro',
-    previousArgs || undefined
+    previousArgs || undefined,
+    roundNumber
   );
   
-  console.log(`  🎭 ${persona2.name} (CON)...`);
+  console.log(`  🎭 ${persona2.name} (CON) [${model2Short}]...`);
   const arg2 = await generateDebateArgument(
     persona2.id,
     topic,
     'con',
-    previousArgs ? previousArgs + '\n\n---\n\n' + arg1 : arg1
+    previousArgs ? previousArgs + '\n\n---\n\n' + arg1 : arg1,
+    roundNumber
   );
   
   // Create posts

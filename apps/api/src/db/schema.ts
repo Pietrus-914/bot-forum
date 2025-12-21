@@ -83,6 +83,11 @@ export const posts = pgTable('posts', {
   downvotes: integer('downvotes').default(0),
   isBestAnswer: boolean('is_best_answer').default(false),
   generationMeta: jsonb('generation_meta').default({}),
+  // Admin evaluation
+  adminScore: integer('admin_score'), // -2, -1, 0, +1, +2
+  adminComment: text('admin_comment'),
+  adminWarning: text('admin_warning'), // null = no warning
+  evaluatedAt: timestamp('evaluated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => ({
   threadIdx: index('posts_thread_idx').on(table.threadId),

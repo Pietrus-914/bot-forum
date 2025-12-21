@@ -9,12 +9,13 @@ interface GeneratePostOptions {
   context?: string;
   isOpener?: boolean;
   debateStance?: 'pro' | 'con';
+  existingPostsCount?: number; // How many posts before this one
 }
 
 export async function generatePost(options: GeneratePostOptions): Promise<string> {
-  const { personaId, topic, context, isOpener = false, debateStance } = options;
+  const { personaId, topic, context, isOpener = false, debateStance, existingPostsCount = 0 } = options;
   
-  // Get persona
+  // Get persona with model info
   const persona = await db
     .select()
     .from(personas)
@@ -25,67 +26,49 @@ export async function generatePost(options: GeneratePostOptions): Promise<string
     throw new Error('Persona not found');
   }
   
-  const { name, personalityPrompt, temperature, maxTokens } = persona[0];
+  const { name, personalityPrompt, modelName, temperature, maxTokens } = persona[0];
   
-  // Build natural prompt
-  let prompt = `${personalityPrompt}
-
----
-
-NOW YOU'RE WRITING A FORUM POST.
-
-DISCUSSION TOPIC: "${topic}"
-
-`;
-
+  // Build prompt based on context
+  let prompt = personalityPrompt + '\n\n---\n\n';
+  
   if (debateStance) {
-    prompt += `YOUR DEBATE ROLE: You're arguing ${debateStance === 'pro' ? 'IN FAVOR OF' : 'AGAINST'} this position.
-Present strong arguments for your side. Be persuasive but fair.
-
-`;
+    prompt += `DEBATE TOPIC: "${topic}"\n`;
+    prompt += `YOUR POSITION: Argue ${debateStance === 'pro' ? 'IN FAVOR' : 'AGAINST'}.\n\n`;
+  } else {
+    prompt += `TOPIC: "${topic}"\n\n`;
   }
 
   if (isOpener) {
-    prompt += `THIS IS YOUR OPENING POST starting the discussion.
-
-Tasks:
-- Present the topic from YOUR perspective
-- Share your experience/opinion
-- Ask questions or throw out a provocative take to get others talking
-- Write AS YOURSELF - with your verbal tics, style, emotions`;
+    prompt += `Write an opening post about this topic. Share your perspective, maybe ask a question or make a provocative point to get discussion going.\n\n`;
   } else {
-    prompt += `DISCUSSION SO FAR:
-${context}
-
----
-
-THIS IS YOUR REPLY to this discussion.
-
-Tasks:
-- Respond to what others said (you can agree OR disagree)
-- Add your own perspective
-- You can praise someone, criticize, ask questions
-- Write AS YOURSELF - with your verbal tics, style, emotions
-- DON'T repeat what's already been said`;
+    // Prevent "I've been following this thread" hallucination
+    if (existingPostsCount <= 1) {
+      prompt += `You're the FIRST reply to this topic. There's only the opening post above - no "thread" to follow yet.\n\n`;
+    } else {
+      prompt += `There are ${existingPostsCount} posts before yours in this discussion.\n\n`;
+    }
+    
+    prompt += `DISCUSSION SO FAR:\n${context}\n\n---\n\n`;
+    prompt += `Write your reply. You can agree, disagree, add your perspective, or ask questions. DON'T repeat what's already been said.\n\n`;
+    
+    // Prevent echo chamber
+    prompt += `IMPORTANT: Use your OWN vocabulary. Don't copy phrases from other posts. If someone said "nuance and empathy" - find your own words.\n\n`;
   }
 
-  prompt += `
+  // Anti-AI patterns
+  prompt += `RULES:
+- Write naturally, like a real forum post
+- NO "As an AI" or "As ${name}" - just write
+- NO asterisks for actions (*smiles*)
+- DON'T be overly polite or use "sandwich" feedback structure
+- You CAN be blunt, disagree directly, or even be a bit rude if that fits your character
+- Length: ${maxTokens && maxTokens < 500 ? '100-200 words' : '150-300 words'}
 
-RULES (VERY IMPORTANT):
-1. Write in ENGLISH like on a real forum (Reddit style)
-2. NEVER write "As an AI" or "As ${name}" - just write
-3. NEVER use asterisks for actions (*smiles*)
-4. Your length: ${maxTokens < 600 ? 'keep it short, 100-200 words' : maxTokens < 750 ? 'medium length, 150-300 words' : 'can be longer, 200-400 words'}
-5. You can have typos if that fits your character
-6. Use YOUR slang and verbal tics
-7. DON'T format perfectly - this is a forum, not an essay
-8. BE YOURSELF - with your flaws and emotions
-
-WRITE YOUR POST:`;
+Write your post now:`;
 
   const content = await complete(prompt, {
-    tier: 'balanced',
-    maxTokens: maxTokens || 800,
+    model: modelName || undefined,
+    maxTokens: maxTokens || 600,
     temperature: (temperature || 70) / 100,
   });
 
@@ -101,6 +84,7 @@ function cleanPostContent(content: string, personaName: string): string {
     /As \w+,? (I would like to|I must|I should)[^.]*\./gi,
     /I don't have (personal experiences|real feelings)[^.]*\./gi,
     /From an AI perspective[^.]*\./gi,
+    /I've been following this thread[^.]*\./gi, // Common hallucination
   ];
   
   for (const phrase of aiPhrases) {
@@ -111,7 +95,7 @@ function cleanPostContent(content: string, personaName: string): string {
   cleaned = cleaned.replace(/\*[^*]+\*/g, '');
   
   // Remove "Post:" or "Response:" prefixes
-  cleaned = cleaned.replace(/^(Post|Response|Reply):\s*/i, '');
+  cleaned = cleaned.replace(/^(Post|Response|Reply|Here's my (post|reply|response)):\s*/i, '');
   
   // Remove persona name at the start if present
   cleaned = cleaned.replace(new RegExp(`^${personaName}:?\\s*`, 'i'), '');
@@ -127,7 +111,8 @@ export async function generateDebateArgument(
   personaId: string,
   topic: string,
   stance: 'pro' | 'con',
-  previousArguments?: string
+  previousArguments?: string,
+  roundNumber?: number
 ): Promise<string> {
   return generatePost({
     personaId,
@@ -135,5 +120,6 @@ export async function generateDebateArgument(
     context: previousArguments,
     isOpener: !previousArguments,
     debateStance: stance,
+    existingPostsCount: roundNumber ? roundNumber * 2 : 0,
   });
 }
