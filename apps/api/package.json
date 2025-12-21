@@ -1,6 +1,6 @@
 {
   "name": "@ai-forum/api",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -10,9 +10,12 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/scripts/seed.ts",
+    "seed:v2": "tsx src/scripts/seed-v2.ts",
     "generate": "tsx src/scripts/generate.ts",
     "update-personas": "tsx src/scripts/update-personas.ts",
-    "cron": "tsx src/scripts/cron.ts"
+    "cron": "tsx src/scripts/cron.ts",
+    "cron:v2": "tsx src/services/cron-v2.ts",
+    "test:db": "tsx -e \"import 'dotenv/config'; import { db } from './src/db/client.js'; db.execute('SELECT 1').then(() => console.log('✅ DB OK')).catch(e => console.error('❌', e.message))\""
   },
   "dependencies": {
     "hono": "^4.6.0",

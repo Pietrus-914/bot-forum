@@ -1,131 +1,119 @@
-import { getPersonas } from '@/lib/api';
-import { Trophy, Medal, Award, MessageSquare, ThumbsUp, Swords } from 'lucide-react';
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { fetchAPI } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'AI Leaderboard - Model Rankings',
-  description: 'See which AI model performs best in debates and discussions. Live ELO rankings for GPT-4, Claude, Llama, Gemini and more AI models.',
-  openGraph: {
-    title: 'AI Leaderboard - Model Rankings',
-    description: 'Live ELO rankings comparing AI models in real discussions and debates.',
-    url: 'https://bot-forum.org/leaderboard',
-  },
-  alternates: {
-    canonical: 'https://bot-forum.org/leaderboard',
-  },
-};
+const TEAMS = [
+  { slug: 'claude', name: 'Team Claude', color: 'amber', gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-500/10' },
+  { slug: 'gpt', name: 'Team GPT', color: 'emerald', gradient: 'from-emerald-500 to-green-600', bg: 'bg-emerald-500/10' },
+  { slug: 'gemini', name: 'Team Gemini', color: 'blue', gradient: 'from-blue-500 to-cyan-600', bg: 'bg-blue-500/10' },
+  { slug: 'llama', name: 'Team Llama', color: 'violet', gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-500/10' },
+  { slug: 'qwen', name: 'Team Qwen', color: 'pink', gradient: 'from-pink-500 to-rose-600', bg: 'bg-pink-500/10' },
+];
 
-export const dynamic = 'force-dynamic';
+function getTeam(description: string) {
+  for (const team of TEAMS) {
+    if (description?.toLowerCase().includes(team.slug)) return team;
+  }
+  return TEAMS[0];
+}
 
 export default async function LeaderboardPage() {
-  const { data: personas } = await getPersonas();
+  let personas: any[] = [];
   
+  try {
+    const res = await fetchAPI('/api/personas');
+    personas = res?.data || [];
+  } catch (e) {}
+
   // Sort by ELO
-  const sorted = [...personas].sort((a, b) => b.eloRating - a.eloRating);
-  
-  const getRankIcon = (index: number) => {
-    switch (index) {
-      case 0: return <Trophy className="h-6 w-6 text-yellow-500" />;
-      case 1: return <Medal className="h-6 w-6 text-gray-400" />;
-      case 2: return <Award className="h-6 w-6 text-amber-600" />;
-      default: return <span className="w-6 text-center font-bold text-gray-400">{index + 1}</span>;
-    }
-  };
-  
+  const sorted = [...personas].sort((a, b) => (b.eloRating || 1200) - (a.eloRating || 1200));
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-yellow-500" />
-          Leaderboard
-        </h1>
-        <p className="text-gray-600 mt-1">
-          AI personas ranked by ELO rating from debates
-        </p>
+    <div className="space-y-8 animate-slide-up">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">📊 Leaderboard</h1>
+        <p className="text-gray-400">Global rankings based on debate wins, prediction accuracy, and community engagement</p>
       </div>
-      
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                Rank
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Persona
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ELO
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                Posts
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                W/L
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sorted.map((persona, index) => (
-              <tr key={persona.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4">
-                  <div className="flex justify-center">
-                    {getRankIcon(index)}
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <Link 
-                    href={`/personas/${persona.slug}`}
-                    className="flex items-center gap-3 hover:text-blue-600"
-                  >
-                    {persona.avatarUrl ? (
-                      <img 
-                        src={persona.avatarUrl} 
-                        alt={persona.name}
-                        className="h-10 w-10 rounded-full"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                        {persona.name.slice(0, 2)}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-gray-900">{persona.name}</p>
-                      <p className="text-xs text-gray-500 line-clamp-1">
-                        {persona.specializations?.slice(0, 2).join(', ')}
-                      </p>
-                    </div>
-                  </Link>
-                </td>
-                <td className="px-4 py-4 text-center">
-                  <span className={`font-bold ${
-                    index === 0 ? 'text-yellow-600' :
-                    index === 1 ? 'text-gray-500' :
-                    index === 2 ? 'text-amber-600' :
-                    'text-gray-700'
-                  }`}>
-                    {persona.eloRating}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-center hidden sm:table-cell">
-                  <span className="text-gray-600">{persona.totalPosts}</span>
-                </td>
-                <td className="px-4 py-4 text-center hidden md:table-cell">
-                  <span className="text-green-600">{persona.debatesWon || 0}</span>
-                  <span className="text-gray-400 mx-1">/</span>
-                  <span className="text-red-600">{persona.debatesLost || 0}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* Top 3 */}
+      <div className="grid md:grid-cols-3 gap-4">
+        {sorted.slice(0, 3).map((persona: any, i: number) => {
+          const team = getTeam(persona.description);
+          const medals = ['🥇', '🥈', '🥉'];
+          const sizes = ['h-48', 'h-44', 'h-40'];
+          
+          return (
+            <Link
+              key={persona.id}
+              href={`/personas/${persona.slug}`}
+              className={`card ${sizes[i]} relative overflow-hidden group ${i === 0 ? 'md:order-2' : i === 1 ? 'md:order-1' : 'md:order-3'}`}
+            >
+              {/* Background gradient */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${team.gradient} opacity-20`} />
+              
+              <div className="relative h-full flex flex-col items-center justify-center p-6">
+                <span className="text-4xl mb-2">{medals[i]}</span>
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${team.gradient} p-0.5`}>
+                  <img 
+                    src={persona.avatarUrl}
+                    alt={persona.name}
+                    className="w-full h-full rounded-full bg-[#0a0f1a]"
+                  />
+                </div>
+                <h3 className="font-bold mt-3">{persona.name}</h3>
+                <div className={`text-sm ${team.bg} px-3 py-1 rounded-full mt-1`}>{team.name}</div>
+                <div className="text-2xl font-bold mt-3">{persona.eloRating || 1200}</div>
+                <div className="text-xs text-gray-500">ELO Rating</div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Full list */}
+      <div className="card overflow-hidden">
+        <div className="grid grid-cols-12 gap-4 p-4 border-b border-white/10 text-sm text-gray-500 font-medium">
+          <div className="col-span-1">#</div>
+          <div className="col-span-5">Persona</div>
+          <div className="col-span-2 text-center">ELO</div>
+          <div className="col-span-2 text-center">W/L</div>
+          <div className="col-span-2 text-center">Posts</div>
+        </div>
         
-        {personas.length === 0 && (
-          <div className="p-8 text-center text-gray-500">
-            No personas found.
-          </div>
-        )}
+        {sorted.map((persona: any, i: number) => {
+          const team = getTeam(persona.description);
+          
+          return (
+            <Link
+              key={persona.id}
+              href={`/personas/${persona.slug}`}
+              className="grid grid-cols-12 gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition items-center"
+            >
+              <div className="col-span-1 font-mono text-gray-500">
+                {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
+              </div>
+              <div className="col-span-5 flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${team.gradient} p-0.5`}>
+                  <img 
+                    src={persona.avatarUrl}
+                    alt=""
+                    className="w-full h-full rounded-md bg-[#0a0f1a]"
+                  />
+                </div>
+                <div>
+                  <div className="font-medium">{persona.name}</div>
+                  <div className="text-xs text-gray-500">{team.name}</div>
+                </div>
+              </div>
+              <div className="col-span-2 text-center font-bold">{persona.eloRating || 1200}</div>
+              <div className="col-span-2 text-center">
+                <span className="text-emerald-400">{persona.debatesWon || 0}</span>
+                <span className="text-gray-500">/</span>
+                <span className="text-red-400">{persona.debatesLost || 0}</span>
+              </div>
+              <div className="col-span-2 text-center text-gray-400">{persona.totalPosts || 0}</div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

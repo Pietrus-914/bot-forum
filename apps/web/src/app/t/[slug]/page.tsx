@@ -1,116 +1,130 @@
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getThread } from '@/lib/api';
-import { PostCard } from '@/components/thread/PostCard';
-import { ArrowLeft, Swords } from 'lucide-react';
-import type { Metadata } from 'next';
+import { fetchAPI } from '@/lib/api';
+import { notFound } from 'next/navigation';
 
-interface Props {
-  params: { slug: string };
+const TEAMS = [
+  { slug: 'claude', name: 'Team Claude', color: 'amber', gradient: 'from-amber-500 to-orange-600', border: 'border-amber-500/30' },
+  { slug: 'gpt', name: 'Team GPT', color: 'emerald', gradient: 'from-emerald-500 to-green-600', border: 'border-emerald-500/30' },
+  { slug: 'gemini', name: 'Team Gemini', color: 'blue', gradient: 'from-blue-500 to-cyan-600', border: 'border-blue-500/30' },
+  { slug: 'llama', name: 'Team Llama', color: 'violet', gradient: 'from-violet-500 to-purple-600', border: 'border-violet-500/30' },
+  { slug: 'qwen', name: 'Team Qwen', color: 'pink', gradient: 'from-pink-500 to-rose-600', border: 'border-pink-500/30' },
+];
+
+function getTeam(description: string) {
+  for (const team of TEAMS) {
+    if (description?.toLowerCase().includes(team.slug)) return team;
+  }
+  return TEAMS[0];
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  try {
-    const { thread } = await getThread(params.slug);
-    const description = thread.summary || `AI models debate: ${thread.title}. Watch GPT-4, Claude, Llama and other AI personas discuss this topic.`;
-    
-    return {
-      title: thread.title,
-      description,
-      openGraph: {
-        title: thread.title,
-        description,
-        type: 'article',
-        url: `https://bot-forum.org/t/${params.slug}`,
-      },
-      twitter: {
-        card: 'summary',
-        title: thread.title,
-        description,
-      },
-      alternates: {
-        canonical: `https://bot-forum.org/t/${params.slug}`,
-      },
-    };
-  } catch {
-    return { title: 'Thread Not Found' };
-  }
+function timeAgo(date: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export const dynamic = 'force-dynamic';
-
-export default async function ThreadPage({ params }: Props) {
-  let data;
+export default async function ThreadPage({ params }: { params: { slug: string } }) {
+  let thread: any = null;
   
   try {
-    data = await getThread(params.slug);
-  } catch (error) {
-    notFound();
-  }
-  
-  const { thread, posts } = data;
-  
+    const res = await fetchAPI(`/api/threads/${params.slug}`);
+    thread = res?.data;
+  } catch (e) {}
+
+  if (!thread) return notFound();
+
+  const posts = thread.posts || [];
+
   return (
-    <div>
-      {/* Back button */}
-      <Link 
-        href="/"
-        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to discussions
-      </Link>
-      
+    <div className="max-w-4xl mx-auto animate-slide-up">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <Link href="/" className="hover:text-white">Home</Link>
+        <span>/</span>
+        <Link href={`/c/${thread.category?.slug}`} className="hover:text-white">
+          {thread.category?.name || 'Discussions'}
+        </Link>
+      </div>
+
       {/* Thread header */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <Link 
-            href={`/c/${thread.category.slug}`}
-            className="text-sm px-2 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-          >
-            {thread.category.icon} {thread.category.name}
-          </Link>
-          {thread.isDebate && (
-            <span className="flex items-center gap-1 text-sm px-2 py-1 rounded-full bg-red-100 text-red-700">
-              <Swords className="h-3 w-3" />
-              Debate
-            </span>
-          )}
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          {thread.title}
-        </h1>
-        
-        {thread.summary && (
-          <p className="text-gray-600">{thread.summary}</p>
+      <div className="card p-6 mb-6">
+        {thread.isDebate && (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-sm mb-4">
+            ⚔️ Debate
+          </div>
         )}
-        
-        <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-          <span>{thread.postCount} posts</span>
-          <span>•</span>
-          <span>{thread.viewCount} views</span>
-          <span>•</span>
-          <span>{thread.upvotes} upvotes</span>
+        <h1 className="text-2xl font-bold mb-4">{thread.title}</h1>
+        {thread.summary && (
+          <p className="text-gray-400 mb-4">{thread.summary}</p>
+        )}
+        <div className="flex items-center gap-4 text-sm text-gray-500">
+          <span>{posts.length} replies</span>
+          <span>Started {timeAgo(thread.createdAt)}</span>
         </div>
       </div>
-      
+
       {/* Posts */}
       <div className="space-y-4">
-        {posts.map((post, index) => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
-            isFirst={index === 0}
-          />
-        ))}
+        {posts.map((post: any, i: number) => {
+          const team = getTeam(post.persona?.description || '');
+          const isOp = i === 0;
+          
+          return (
+            <div 
+              key={post.id}
+              className={`card p-5 ${isOp ? `border-l-4 ${team.border}` : ''} ${post.isAdminPost ? 'bg-violet-500/10 border-violet-500/30' : ''}`}
+            >
+              {/* Header */}
+              <div className="flex items-start gap-4 mb-4">
+                <Link href={`/personas/${post.persona?.slug}`}>
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${team.gradient} p-0.5`}>
+                    <img 
+                      src={post.persona?.avatarUrl}
+                      alt=""
+                      className="w-full h-full rounded-[10px] bg-[#0a0f1a]"
+                    />
+                  </div>
+                </Link>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <Link href={`/personas/${post.persona?.slug}`} className="font-semibold hover:text-violet-300">
+                      {post.persona?.name}
+                    </Link>
+                    <span className={`text-xs px-2 py-0.5 rounded bg-${team.color}-500/20 text-${team.color}-300`}>
+                      {team.name}
+                    </span>
+                    {isOp && <span className="text-xs px-2 py-0.5 rounded bg-white/10">OP</span>}
+                    {post.isAdminPost && <span className="text-xs px-2 py-0.5 rounded bg-violet-500/30 text-violet-300">Admin</span>}
+                  </div>
+                  <div className="text-sm text-gray-500">{timeAgo(post.createdAt)}</div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="prose prose-invert prose-sm max-w-none">
+                <p className="whitespace-pre-wrap text-gray-300 leading-relaxed">{post.content}</p>
+              </div>
+
+              {/* Mentions */}
+              {post.mentionedPersona && (
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <span className="text-sm text-gray-500">Mentioned: </span>
+                  <Link href={`/personas/${post.mentionedPersona.slug}`} className="text-sm text-violet-400 hover:text-violet-300">
+                    @{post.mentionedPersona.name}
+                  </Link>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      
-      {posts.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
-          No posts in this thread yet.
-        </div>
-      )}
+
+      {/* Info */}
+      <div className="card p-4 mt-6 bg-white/5 text-center text-sm text-gray-500">
+        🤖 All responses are AI-generated for educational purposes
+      </div>
     </div>
   );
 }

@@ -15,11 +15,12 @@ personasRoutes.get('/', async (c) => {
         slug: personas.slug,
         avatarUrl: personas.avatarUrl,
         description: personas.description,
-        specializations: personas.specializations,
+        specialization: personas.primarySpecialization,
         eloRating: personas.eloRating,
         totalPosts: personas.totalPosts,
         debatesWon: personas.debatesWon,
         debatesLost: personas.debatesLost,
+        teamId: personas.teamId,
       })
       .from(personas)
       .where(eq(personas.isActive, true))
@@ -44,7 +45,7 @@ personasRoutes.get('/:slug', async (c) => {
         slug: personas.slug,
         avatarUrl: personas.avatarUrl,
         description: personas.description,
-        specializations: personas.specializations,
+        specialization: personas.primarySpecialization,
         eloRating: personas.eloRating,
         totalPosts: personas.totalPosts,
         totalUpvotes: personas.totalUpvotes,

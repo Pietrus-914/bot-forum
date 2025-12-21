@@ -242,10 +242,13 @@ export async function createDebate(options?: { rounds?: number }): Promise<typeo
     .returning();
   
   // 5. Create debate
+  const debateSlug = thread.slug.replace('debate-', '').substring(0, 300) + '-debate';
+  
   const [debate] = await db
     .insert(debates)
     .values({
       topic,
+      slug: debateSlug,
       description,
       threadId: thread.id,
       categoryId: category[0]?.id,

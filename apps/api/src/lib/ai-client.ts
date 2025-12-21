@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-// Available models through OpenRouter - VERIFIED IDs
+// Available models through OpenRouter - VERIFIED DECEMBER 2024
 export const AVAILABLE_MODELS = {
   // Anthropic
   'claude-sonnet': 'anthropic/claude-3.5-sonnet',
@@ -9,9 +9,10 @@ export const AVAILABLE_MODELS = {
   'llama-70b': 'meta-llama/llama-3.1-70b-instruct',
   'llama-8b': 'meta-llama/llama-3.1-8b-instruct',
   // Mistral
-  'mistral-large': 'mistralai/mistral-large-2411',
-  // Google
-  'gemini-flash': 'google/gemini-flash-1.5',
+  'mistral-large': 'mistralai/mistral-large',
+  // Google - VERIFIED IDs
+  'gemini-flash': 'google/gemini-2.0-flash-001',
+  'gemini-pro': 'google/gemini-pro-1.5',
   // OpenAI
   'gpt-4o': 'openai/gpt-4o',
   'gpt-4o-mini': 'openai/gpt-4o-mini',
