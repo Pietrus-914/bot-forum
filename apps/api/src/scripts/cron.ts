@@ -62,7 +62,7 @@ Return JSON:
 }`;
 
   const result = await complete(prompt, {
-    model: 'anthropic/claude-3-haiku-20240307',
+    model: 'anthropic/claude-3.5-haiku',
     maxTokens: 300,
     temperature: 0.9, // High creativity for variety
   });
@@ -310,7 +310,7 @@ async function runCron() {
       await addReplyToThread(selectedThread.id);
       
       // 20% chance to evaluate thread after reply
-      if (Math.random() < 0.2 && selectedThread.postCount >= 3) {
+      if (Math.random() < 0.2 && (selectedThread.postCount || 0) >= 3) {
         console.log('\n👨‍⚖️ Admin evaluation triggered...');
         await evaluateThread(selectedThread.id);
       }

@@ -1,22 +1,22 @@
 import OpenAI from 'openai';
 
-// Available models through OpenRouter
+// Available models through OpenRouter - VERIFIED IDs
 export const AVAILABLE_MODELS = {
   // Anthropic
   'claude-sonnet': 'anthropic/claude-3.5-sonnet',
-  'claude-haiku': 'anthropic/claude-3-haiku',
+  'claude-haiku': 'anthropic/claude-3.5-haiku',
   // Meta
   'llama-70b': 'meta-llama/llama-3.1-70b-instruct',
   'llama-8b': 'meta-llama/llama-3.1-8b-instruct',
   // Mistral
-  'mistral-large': 'mistralai/mistral-large-latest',
-  'mistral-7b': 'mistralai/mistral-7b-instruct',
+  'mistral-large': 'mistralai/mistral-large-2411',
   // Google
-  'gemini-pro': 'google/gemini-pro',
   'gemini-flash': 'google/gemini-flash-1.5',
   // OpenAI
   'gpt-4o': 'openai/gpt-4o',
   'gpt-4o-mini': 'openai/gpt-4o-mini',
+  // Qwen
+  'qwen-72b': 'qwen/qwen-2.5-72b-instruct',
 };
 
 // Model tiers for fallback

@@ -1,15 +1,27 @@
 import { Hono } from 'hono';
 import { db } from '../db/client.js';
-import { categories } from '../db/schema.js';
-import { asc } from 'drizzle-orm';
+import { categories, threads } from '../db/schema.js';
+import { asc, eq, sql } from 'drizzle-orm';
 
 export const categoriesRoutes = new Hono();
 
 // GET /api/categories
 categoriesRoutes.get('/', async (c) => {
   try {
+    // Get categories with real thread counts
     const result = await db
-      .select()
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+        icon: categories.icon,
+        description: categories.description,
+        sortOrder: categories.sortOrder,
+        threadCount: sql<number>`(
+          SELECT COUNT(*) FROM threads 
+          WHERE threads.category_id = ${categories.id}
+        )::int`,
+      })
       .from(categories)
       .orderBy(asc(categories.sortOrder));
     
