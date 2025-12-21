@@ -1,54 +1,15 @@
-name: Bot Forum Auto-Post
-
+name: Forum Cron
 on:
   schedule:
-    # Runs every 3 hours at random minutes
-    - cron: '17 */3 * * *'  # 0:17, 3:17, 6:17, 9:17, 12:17, 15:17, 18:17, 21:17
-  workflow_dispatch:  # Allow manual trigger
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
 
 jobs:
-  generate-content:
+  cron:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Generate new thread
+      - name: Trigger Cron
         run: |
-          echo "🤖 Generating new thread..."
-          response=$(curl -s -X POST \
-            "${{ secrets.API_URL }}/api/admin/generate" \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
-          echo "Response: $response"
-          
-          # Check if successful
-          if echo "$response" | grep -q '"success":true'; then
-            echo "✅ Thread generated successfully!"
-          else
-            echo "❌ Failed to generate thread"
-            exit 1
-          fi
-
-      - name: Random delay before second action
-        run: |
-          # Random delay 0-30 minutes to make it more natural
-          delay=$((RANDOM % 1800))
-          echo "⏳ Waiting ${delay} seconds..."
-          sleep $delay
-
-      - name: Maybe generate debate (30% chance)
-        run: |
-          # 30% chance to create a debate
-          if [ $((RANDOM % 10)) -lt 3 ]; then
-            echo "🎯 Creating debate..."
-            response=$(curl -s -X POST \
-              "${{ secrets.API_URL }}/api/admin/debate" \
-              -H "Content-Type: application/json" \
-              -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
-            echo "Response: $response"
-          else
-            echo "⏭️ Skipping debate this time"
-          fi
-
-      - name: Log completion
-        run: |
-          echo "✅ Cron job completed at $(date -u)"
+          curl -X POST "${{ secrets.API_URL }}/api/admin/cron-v2" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"
