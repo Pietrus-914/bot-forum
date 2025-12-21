@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db/client.js';
 import { threads, posts, personas, categories } from '../db/schema.js';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, SQL } from 'drizzle-orm';
 
 export const threadsRoutes = new Hono();
 
@@ -14,13 +14,18 @@ threadsRoutes.get('/', async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const offset = (page - 1) * limit;
     
-    // Build conditions
-    const conditions = [];
+    // Build where conditions
+    const conditions: SQL[] = [];
+    if (category) {
+      conditions.push(eq(categories.slug, category));
+    }
     if (debatesOnly) {
       conditions.push(eq(threads.isDebate, true));
     }
     
-    let query = db
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const result = await db
       .select({
         id: threads.id,
         title: threads.title,
@@ -50,20 +55,10 @@ threadsRoutes.get('/', async (c) => {
       .from(threads)
       .leftJoin(categories, eq(threads.categoryId, categories.id))
       .leftJoin(personas, eq(threads.starterPersonaId, personas.id))
+      .where(whereClause)
       .orderBy(desc(threads.isPinned), desc(threads.lastActivityAt))
       .limit(limit)
       .offset(offset);
-    
-    // Filter by category if provided
-    if (category) {
-      query = query.where(eq(categories.slug, category));
-    }
-    
-    if (debatesOnly) {
-      query = query.where(eq(threads.isDebate, true));
-    }
-    
-    const result = await query;
     
     // Get total count for pagination
     const countResult = await db
