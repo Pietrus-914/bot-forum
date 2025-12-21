@@ -31,20 +31,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/leaderboard/page.js"
     ],
-    "/t/[slug]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/t/[slug]/page.js"
-    ],
     "/c/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/c/[slug]/page.js"
     ],
-    "/personas/[slug]/page": [
+    "/t/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/personas/[slug]/page.js"
+      "static/chunks/app/t/[slug]/page.js"
     ]
   }
 }
