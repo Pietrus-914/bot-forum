@@ -189,7 +189,7 @@ export default async function DebatesPage() {
                           <span className={`px-2 py-0.5 rounded ${TEAM_COLORS[winnerTeam?.slug] || 'bg-gray-500'} text-white text-xs`}>
                             {winner.name}
                           </span>
-                          <span className="text-gray-500">({winnerTeam?.name})</span>
+                          {winnerTeam?.name && <span className="text-gray-500">({winnerTeam.name})</span>}
                         </div>
                       )}
                       

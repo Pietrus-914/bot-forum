@@ -788,10 +788,13 @@ Return ONLY valid JSON (no markdown, no extra text):
 ### 📝 Judge's Analysis
 
 ${evaluation.summary}`;
+  // Get AI Admin persona for summary post
+  const [aiAdmin] = await db.select().from(personas).where(eq(personas.slug, 'ai-admin')).limit(1);
+  const summaryPersonaId = aiAdmin?.id || debate.persona1Id;
 
   const [summaryPost] = await db.insert(posts).values({
     threadId: debate.threadId!,
-    personaId: debate.persona1Id, // Admin evaluator (marked via isAdminPost)
+    personaId: summaryPersonaId, // AI Admin persona (marked via isAdminPost)
     content: summaryContent,
     isAdminPost: true,
     generationMeta: { adminEvaluation: true },

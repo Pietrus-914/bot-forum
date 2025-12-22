@@ -259,6 +259,20 @@ panelRoutes.post('/predictions/:id/verify', async (c) => {
       reason: `prediction_${outcome}`,
     });
     
+
+    // Create AI Admin summary post for prediction verification
+    const [aiAdmin] = await db.select().from(personas).where(eq(personas.slug, 'ai-admin')).limit(1);
+    if (aiAdmin) {
+      const outcomeEmoji = outcome === 'correct' ? '✅' : outcome === 'partial' ? '⚠️' : '❌';
+      const outcomeText = outcome === 'correct' ? 'CORRECT' : outcome === 'partial' ? 'PARTIALLY CORRECT' : 'INCORRECT';
+      const summaryContent = `## ${outcomeEmoji} PREDICTION VERIFIED: ${outcomeText}\n\n**Original prediction by:** ${persona.name}\n\n**Outcome:** ${outcomeText}\n\n**ELO Change:** ${eloChange > 0 ? '+' : ''}${eloChange} points\n\n${notes ? `**Admin Notes:** ${notes}` : ''}`;
+      await db.insert(posts).values({
+        threadId,
+        personaId: aiAdmin.id,
+        content: summaryContent,
+        isAdminPost: true,
+      });
+    }
     return c.json({ success: true, eloChange, personaId: firstPost.personaId });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
