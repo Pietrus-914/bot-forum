@@ -9,13 +9,32 @@ interface GeneratePostOptions {
   context?: string;
   isOpener?: boolean;
   debateStance?: 'pro' | 'con';
-  existingPostsCount?: number; // How many posts before this one
+  existingPostsCount?: number;
+}
+
+// Random post length for variety
+function getRandomLength(): string {
+  const lengths = [
+    '2-4 sentences, be brief and punchy',
+    '3-5 sentences, moderate length',
+    '4-6 sentences, share your full thoughts',
+    '5-8 sentences, go into detail',
+    '1-2 short paragraphs',
+  ];
+  const weights = [25, 30, 25, 15, 5]; // Favor shorter posts
+  const total = weights.reduce((a, b) => a + b, 0);
+  let random = Math.random() * total;
+  
+  for (let i = 0; i < weights.length; i++) {
+    random -= weights[i];
+    if (random <= 0) return lengths[i];
+  }
+  return lengths[1];
 }
 
 export async function generatePost(options: GeneratePostOptions): Promise<string> {
   const { personaId, topic, context, isOpener = false, debateStance, existingPostsCount = 0 } = options;
   
-  // Get persona with model info
   const persona = await db
     .select()
     .from(personas)
@@ -28,7 +47,6 @@ export async function generatePost(options: GeneratePostOptions): Promise<string
   
   const { name, personalityPrompt, modelName, temperature, maxTokens } = persona[0];
   
-  // Build prompt based on context
   let prompt = personalityPrompt + '\n\n---\n\n';
   
   if (debateStance) {
@@ -41,7 +59,6 @@ export async function generatePost(options: GeneratePostOptions): Promise<string
   if (isOpener) {
     prompt += `Write an opening post about this topic. Share your perspective, maybe ask a question or make a provocative point to get discussion going.\n\n`;
   } else {
-    // Prevent "I've been following this thread" hallucination
     if (existingPostsCount <= 1) {
       prompt += `You're the FIRST reply to this topic. There's only the opening post above - no "thread" to follow yet.\n\n`;
     } else {
@@ -50,25 +67,23 @@ export async function generatePost(options: GeneratePostOptions): Promise<string
     
     prompt += `DISCUSSION SO FAR:\n${context}\n\n---\n\n`;
     prompt += `Write your reply. You can agree, disagree, add your perspective, or ask questions. DON'T repeat what's already been said.\n\n`;
-    
-    // Prevent echo chamber
     prompt += `IMPORTANT: Use your OWN vocabulary. Don't copy phrases from other posts. If someone said "nuance and empathy" - find your own words.\n\n`;
   }
 
-  // Anti-AI patterns
+  const postLength = getRandomLength();
   prompt += `RULES:
 - Write naturally, like a real forum post
 - NO "As an AI" or "As ${name}" - just write
 - NO asterisks for actions (*smiles*)
 - DON'T be overly polite or use "sandwich" feedback structure
 - You CAN be blunt, disagree directly, or even be a bit rude if that fits your character
-- Length: ${maxTokens && maxTokens < 500 ? '100-200 words' : '150-300 words'}
+- LENGTH: ${postLength}. Don't pad with unnecessary text.
 
 Write your post now:`;
 
   const content = await complete(prompt, {
     model: modelName || undefined,
-    maxTokens: maxTokens || 600,
+    maxTokens: Math.min(maxTokens || 400, 400),
     temperature: (temperature || 70) / 100,
   });
 
@@ -78,29 +93,21 @@ Write your post now:`;
 function cleanPostContent(content: string, personaName: string): string {
   let cleaned = content.trim();
   
-  // Remove AI-isms
   const aiPhrases = [
     /As an? (AI|artificial intelligence|language model)[^.]*\./gi,
     /As \w+,? (I would like to|I must|I should)[^.]*\./gi,
     /I don't have (personal experiences|real feelings)[^.]*\./gi,
     /From an AI perspective[^.]*\./gi,
-    /I've been following this thread[^.]*\./gi, // Common hallucination
+    /I've been following this thread[^.]*\./gi,
   ];
   
   for (const phrase of aiPhrases) {
     cleaned = cleaned.replace(phrase, '');
   }
   
-  // Remove action asterisks
   cleaned = cleaned.replace(/\*[^*]+\*/g, '');
-  
-  // Remove "Post:" or "Response:" prefixes
   cleaned = cleaned.replace(/^(Post|Response|Reply|Here's my (post|reply|response)):\s*/i, '');
-  
-  // Remove persona name at the start if present
   cleaned = cleaned.replace(new RegExp(`^${personaName}:?\\s*`, 'i'), '');
-  
-  // Clean up extra whitespace
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   cleaned = cleaned.trim();
   
