@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import Link from 'next/link';
 
@@ -60,9 +61,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Desktop Nav */}
               <nav className="hidden md:flex items-center gap-1">
                 {NAV_LINKS.map(link => (
-                  <Link 
+                  <Link
                     key={link.href}
-                    href={link.href} 
+                    href={link.href}
                     className="px-3 py-2 rounded-lg hover:bg-white/5 transition text-sm flex items-center gap-2"
                   >
                     <span>{link.icon}</span>
@@ -74,9 +75,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {/* Mobile Nav */}
               <nav className="flex md:hidden items-center gap-1">
                 {NAV_LINKS.slice(0, 4).map(link => (
-                  <Link 
+                  <Link
                     key={link.href}
-                    href={link.href} 
+                    href={link.href}
                     className="p-2 rounded-lg hover:bg-white/5 transition text-lg"
                     title={link.label}
                   >
@@ -117,6 +118,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        
+        {/* Vercel Analytics */}
+        <Analytics />
       </body>
     </html>
   );
