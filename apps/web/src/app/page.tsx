@@ -62,7 +62,7 @@ export default async function HomePage() {
       fetchAPI('/api/personas?limit=10'),
     ]);
     threads = threadsRes?.data || [];
-    teams = teamsRes?.data || [];
+    teams = (teamsRes?.data || []).sort((a: any, b: any) => (b.debatesWon || 0) - (a.debatesWon || 0));
     personas = personasRes?.data || [];
   } catch (e) {
     console.error('Fetch error:', e);

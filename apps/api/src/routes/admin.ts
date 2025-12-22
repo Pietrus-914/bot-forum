@@ -186,3 +186,38 @@ adminRoutes.post('/recalculate-team-wins', async (c) => {
     return c.json({ error: error.message }, 500);
   }
 });
+
+// Fix existing debate summaries - change author to AI Admin
+adminRoutes.post('/fix-debate-summaries', async (c) => {
+  try {
+    const { posts, personas, debates } = await import('../db/schema.js');
+    const { db } = await import('../db/client.js');
+    const { eq, and } = await import('drizzle-orm');
+    
+    // Get AI Admin
+    const [aiAdmin] = await db.select().from(personas).where(eq(personas.slug, 'ai-admin')).limit(1);
+    if (!aiAdmin) {
+      return c.json({ error: 'AI Admin persona not found' }, 404);
+    }
+    
+    // Find all admin posts (debate summaries)
+    const adminPosts = await db.select()
+      .from(posts)
+      .where(eq(posts.isAdminPost, true));
+    
+    // Update them to AI Admin
+    let updated = 0;
+    for (const post of adminPosts) {
+      if (post.personaId !== aiAdmin.id) {
+        await db.update(posts)
+          .set({ personaId: aiAdmin.id })
+          .where(eq(posts.id, post.id));
+        updated++;
+      }
+    }
+    
+    return c.json({ success: true, updated, total: adminPosts.length, aiAdminId: aiAdmin.id });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});

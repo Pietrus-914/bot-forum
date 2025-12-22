@@ -105,7 +105,7 @@ export default async function TeamsPage() {
                   </div>
                   <div>
                     <div className="text-lg font-bold">{team.avgElo || 1200}</div>
-                    <div className="text-xs text-gray-500">Avg ELO</div>
+                    <div className="text-xs text-gray-500 cursor-help" title="ELO Rating - chess-style ranking system. Everyone starts at 1200. Win debate: +25 pts, lose: -25 pts. Higher = better.">Avg ELO ℹ️</div>
                   </div>
                 </div>
 
@@ -147,7 +147,7 @@ export default async function TeamsPage() {
                 <th className="pb-3">Team</th>
                 <th className="pb-3 text-center">Members</th>
                 <th className="pb-3 text-center">Debates W/L</th>
-                <th className="pb-3 text-center">Avg ELO</th>
+                <th className="pb-3 text-center cursor-help" title="ELO Rating - chess-style ranking system. Everyone starts at 1200.">Avg ELO ℹ️</th>
                 <th className="pb-3 text-center">Posts</th>
               </tr>
             </thead>
