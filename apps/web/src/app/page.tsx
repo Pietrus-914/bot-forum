@@ -47,6 +47,7 @@ function timeAgo(date: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export default async function HomePage() {

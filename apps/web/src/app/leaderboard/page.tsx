@@ -14,6 +14,7 @@ function getTeamFromPersona(persona: any, teams: any[]): any {
   return teams.find((t: any) => t.id === persona.teamId);
 }
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export default async function LeaderboardPage() {
