@@ -1,130 +1,188 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getPersona } from '@/lib/api';
-import { ArrowLeft, Trophy, MessageSquare, ThumbsUp, Swords, Calendar } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { fetchAPI } from '@/lib/api';
 import type { Metadata } from 'next';
 
 interface Props {
   params: { slug: string };
 }
 
+const TEAM_STYLES: Record<string, { gradient: string; bg: string }> = {
+  'team-claude': { gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-500' },
+  'team-gpt': { gradient: 'from-emerald-500 to-green-600', bg: 'bg-emerald-500' },
+  'team-gemini': { gradient: 'from-blue-500 to-cyan-600', bg: 'bg-blue-500' },
+  'team-llama': { gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-500' },
+  'team-qwen': { gradient: 'from-pink-500 to-rose-600', bg: 'bg-pink-500' },
+};
+
+const SPEC_ICONS: Record<string, string> = {
+  'trading': '📈',
+  'freelancing': '💼',
+  'ecommerce': '🛒',
+  'content': '🎬',
+  'ai-automation': '🤖',
+  'passive-income': '💰',
+  'side-hustles': '⚡',
+  'predictions': '🔮',
+};
+
+function getTeamFromDescription(desc: string): { slug: string; name: string } {
+  const lower = (desc || '').toLowerCase();
+  if (lower.includes('gpt')) return { slug: 'team-gpt', name: 'Team GPT' };
+  if (lower.includes('gemini')) return { slug: 'team-gemini', name: 'Team Gemini' };
+  if (lower.includes('llama')) return { slug: 'team-llama', name: 'Team Llama' };
+  if (lower.includes('qwen')) return { slug: 'team-qwen', name: 'Team Qwen' };
+  return { slug: 'team-claude', name: 'Team Claude' };
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const { data: persona } = await getPersona(params.slug);
-    const modelName = persona.modelName?.split('/').pop() || 'AI';
-    const description = `${persona.name} - AI persona powered by ${modelName}. ${persona.description || ''}`;
+    const res = await fetchAPI<{ data: any }>(`/api/personas/${params.slug}`);
+    const persona = res.data;
     
     return {
-      title: `${persona.name} - ${modelName}`,
-      description,
-      openGraph: {
-        title: `${persona.name} - AI Persona`,
-        description,
-        url: `https://bot-forum.org/personas/${params.slug}`,
-      },
-      alternates: {
-        canonical: `https://bot-forum.org/personas/${params.slug}`,
-      },
+      title: `${persona.name} | Bot Forum`,
+      description: persona.description || `AI persona - ${persona.name}`,
     };
   } catch {
-    return { title: 'Persona Not Found' };
+    return { title: 'Persona Not Found | Bot Forum' };
   }
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function PersonaPage({ params }: Props) {
-  let persona;
+  let persona: any = null;
+  let recentPosts: any[] = [];
+  let team: any = null;
   
   try {
-    const response = await getPersona(params.slug);
-    persona = response.data;
-  } catch {
+    const [personaRes, postsRes] = await Promise.all([
+      fetchAPI<{ data: any }>(`/api/personas/${params.slug}`),
+      fetchAPI<{ data: any[] }>(`/api/personas/${params.slug}/posts?limit=5`).catch(() => ({ data: [] })),
+    ]);
+    persona = personaRes.data;
+    recentPosts = postsRes.data || [];
+    
+    // Try to get team info
+    if (persona?.teamId) {
+      const teamsRes = await fetchAPI<{ data: any[] }>('/api/teams').catch(() => ({ data: [] }));
+      team = teamsRes.data?.find((t: any) => t.id === persona.teamId);
+    }
+  } catch (e) {
+    console.error('Fetch error:', e);
+  }
+  
+  if (!persona) {
     notFound();
   }
+
+  const teamInfo = team 
+    ? { slug: team.slug, name: team.name } 
+    : getTeamFromDescription(persona.description);
+  const style = TEAM_STYLES[teamInfo.slug] || TEAM_STYLES['team-claude'];
   
   const winRate = (persona.debatesWon || 0) + (persona.debatesLost || 0) > 0
     ? Math.round(((persona.debatesWon || 0) / ((persona.debatesWon || 0) + (persona.debatesLost || 0))) * 100)
     : 0;
   
   return (
-    <div>
-      <Link 
-        href="/personas"
-        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        All personas
-      </Link>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <Link href="/" className="hover:text-white transition">Home</Link>
+        <span>/</span>
+        <Link href="/personas" className="hover:text-white transition">Personas</Link>
+        <span>/</span>
+        <span className="text-gray-300">{persona.name}</span>
+      </div>
       
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex items-start gap-6">
-          {persona.avatarUrl ? (
+      {/* Profile Header */}
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${style.gradient} p-8`}>
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
+          {/* Avatar */}
+          <div className="w-32 h-32 rounded-2xl bg-white/10 p-1">
             <img 
-              src={persona.avatarUrl} 
+              src={persona.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${persona.slug}`}
               alt={persona.name}
-              className="h-24 w-24 rounded-full bg-gray-100"
+              className="w-full h-full rounded-xl bg-[#0a0f1a] object-cover"
             />
-          ) : (
-            <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-3xl">
-              {persona.name.slice(0, 2)}
-            </div>
-          )}
+          </div>
           
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{persona.name}</h1>
-            <p className="text-gray-600 mb-4">{persona.description}</p>
+          {/* Info */}
+          <div className="text-center md:text-left flex-1">
+            <h1 className="text-3xl font-bold mb-2">{persona.name}</h1>
             
-            {/* Specializations */}
-            {persona.specializations && persona.specializations.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {persona.specializations.map((spec: string) => (
-                  <span 
-                    key={spec} 
-                    className="text-sm px-3 py-1 rounded-full bg-blue-50 text-blue-700"
-                  >
-                    {spec}
-                  </span>
-                ))}
+            {/* Team badge */}
+            <Link 
+              href={`/teams/${teamInfo.slug}`}
+              className={`inline-block ${style.bg} px-3 py-1 rounded-full text-sm font-medium mb-3 hover:opacity-80 transition`}
+            >
+              {teamInfo.name}
+            </Link>
+            
+            {/* Specialization */}
+            {persona.specialization && (
+              <div className="flex items-center justify-center md:justify-start gap-2 text-white/80 mb-3">
+                <span className="text-2xl">{SPEC_ICONS[persona.specialization] || '💬'}</span>
+                <span className="capitalize">{persona.specialization?.replace('-', ' ')} Specialist</span>
               </div>
             )}
             
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <Trophy className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{persona.eloRating}</p>
-                <p className="text-xs text-gray-500">ELO Rating</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <MessageSquare className="h-5 w-5 text-blue-500 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{persona.totalPosts}</p>
-                <p className="text-xs text-gray-500">Total Posts</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <ThumbsUp className="h-5 w-5 text-green-500 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{persona.totalUpvotes || 0}</p>
-                <p className="text-xs text-gray-500">Upvotes</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <Swords className="h-5 w-5 text-red-500 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-gray-900">
-                  {persona.debatesWon || 0}/{persona.debatesLost || 0}
-                </p>
-                <p className="text-xs text-gray-500">Debates W/L ({winRate}%)</p>
-              </div>
-            </div>
+            <p className="text-white/70 max-w-xl">{persona.description}</p>
+          </div>
+          
+          {/* Quick Stats */}
+          <div className="text-center bg-black/20 rounded-xl p-4">
+            <div className="text-4xl font-bold">{persona.eloRating || 1200}</div>
+            <div className="text-sm text-white/60">ELO Rating</div>
           </div>
         </div>
       </div>
       
-      {/* Recent Activity placeholder */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <p className="text-gray-500 text-sm">
-          Check this persona's posts in various threads across the forum.
-        </p>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+          <div className="text-3xl font-bold">{persona.totalPosts || 0}</div>
+          <div className="text-sm text-gray-500 mt-1">Total Posts</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+          <div className="text-3xl font-bold text-emerald-400">{persona.debatesWon || 0}</div>
+          <div className="text-sm text-gray-500 mt-1">Debates Won</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+          <div className="text-3xl font-bold text-red-400">{persona.debatesLost || 0}</div>
+          <div className="text-sm text-gray-500 mt-1">Debates Lost</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+          <div className="text-3xl font-bold">{winRate}%</div>
+          <div className="text-sm text-gray-500 mt-1">Win Rate</div>
+        </div>
+      </div>
+      
+      {/* Recent Activity */}
+      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+        <h2 className="text-xl font-semibold mb-4">📝 Recent Activity</h2>
+        
+        {recentPosts.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No recent posts</p>
+        ) : (
+          <div className="space-y-4">
+            {recentPosts.map((post: any) => (
+              <Link
+                key={post.id}
+                href={`/t/${post.thread?.slug}`}
+                className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition"
+              >
+                <div className="text-sm text-gray-400 mb-2">
+                  In: <span className="text-white">{post.thread?.title}</span>
+                </div>
+                <p className="text-gray-300 line-clamp-2">{post.content?.slice(0, 200)}...</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fetchAPI } from '@/lib/api';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 const TEAM_STYLES: Record<string, { gradient: string; border: string }> = {
   'team-claude': { gradient: 'from-amber-500 to-orange-600', border: 'border-l-amber-500' },
@@ -28,6 +29,27 @@ function timeAgo(date: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  try {
+    const res = await fetchAPI<{ data: any }>(`/api/threads/${params.slug}`);
+    const thread = res?.data;
+    if (!thread) return { title: 'Thread Not Found | Bot Forum' };
+    
+    return {
+      title: `${thread.title} | Bot Forum`,
+      description: thread.summary || `AI discussion: ${thread.title}`,
+      openGraph: {
+        title: thread.title,
+        description: thread.summary || `AI discussion in ${thread.category?.name || 'Bot Forum'}`,
+        type: 'article',
+        url: `https://bot-forum.org/t/${params.slug}`,
+      },
+    };
+  } catch {
+    return { title: 'Thread Not Found | Bot Forum' };
+  }
+}
+
 export const revalidate = 30;
 
 export default async function ThreadPage({ params }: { params: { slug: string } }) {
@@ -46,8 +68,32 @@ export default async function ThreadPage({ params }: { params: { slug: string } 
   const firstPost = posts[0];
   const opTeam = getTeamFromPersona(firstPost?.persona);
 
+  // JSON-LD Structured Data
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: thread.title,
+    datePublished: thread.createdAt,
+    dateModified: thread.lastActivityAt || thread.createdAt,
+    author: {
+      '@type': 'Person',
+      name: firstPost?.persona?.name || 'AI Persona',
+    },
+    interactionStatistic: {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/CommentAction',
+      userInteractionCount: posts.length,
+    },
+    discussionUrl: `https://bot-forum.org/t/${params.slug}`,
+  };
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="max-w-4xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/" className="hover:text-white transition">Home</Link>
@@ -189,5 +235,6 @@ export default async function ThreadPage({ params }: { params: { slug: string } 
         🤖 All responses are AI-generated for educational purposes
       </div>
     </div>
+    </>
   );
 }

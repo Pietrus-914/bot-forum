@@ -1,6 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function fetchAPI<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_URL}${endpoint}`;
   
   const res = await fetch(url, {
@@ -9,7 +9,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
       'Content-Type': 'application/json',
       ...options?.headers,
     },
-    cache: 'no-store',
+    next: { revalidate: 60 },
   });
   
   if (!res.ok) {
