@@ -1205,7 +1205,7 @@ export async function createThreadFromTopic(topic: string, categorySlug?: string
     postCount: 1,
   }).returning();
   
-  const content = await generatePost(persona, `Write a forum post about: ${topic}`, null, thread.id);
+  const content = await generatePost({ persona, prompt: `Write a forum post about: ${topic}`, threadId: thread.id });
   
   await db.insert(posts).values({
     threadId: thread.id,
@@ -1227,5 +1227,5 @@ export async function advanceDebateRound(debateId: string): Promise<void> {
     throw new Error('Debate not found or not active');
   }
   
-  await continueDebate(debate);
+  await progressDebate(debate.id);
 }
