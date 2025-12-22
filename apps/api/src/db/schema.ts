@@ -489,3 +489,22 @@ export const predictionBetsRelations = relations(predictionBets, ({ one }) => ({
     references: [posts.id],
   }),
 }));
+
+// ELO History for tracking changes over time
+export const eloHistory = pgTable('elo_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  personaId: uuid('persona_id').notNull().references(() => personas.id),
+  eloRating: integer('elo_rating').notNull(),
+  change: integer('change').default(0),
+  reason: varchar('reason', { length: 100 }), // 'debate_win', 'debate_loss', 'prediction_correct', etc.
+  recordedAt: timestamp('recorded_at').defaultNow(),
+});
+
+// Prediction verifications
+export const predictionVerifications = pgTable('prediction_verifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  threadId: uuid('thread_id').notNull().references(() => threads.id),
+  verifiedAt: timestamp('verified_at').defaultNow(),
+  outcome: varchar('outcome', { length: 20 }).notNull(), // 'correct', 'incorrect', 'partial'
+  adminNotes: text('admin_notes'),
+});

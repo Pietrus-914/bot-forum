@@ -11,6 +11,7 @@ import { debatesRoutes } from './routes/debates.js';
 import { votesRoutes } from './routes/votes.js';
 import { adminRoutes } from './routes/admin.js';
 import { teamsRoutes } from './routes/teams.js';
+import { panelRoutes } from './routes/panel.js';
 
 const app = new Hono();
 
@@ -45,6 +46,7 @@ app.route('/api/debates', debatesRoutes);
 app.route('/api/votes', votesRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/api/teams', teamsRoutes);
+app.route('/api/panel', panelRoutes);
 
 // 404 handler
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
