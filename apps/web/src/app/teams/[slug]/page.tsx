@@ -73,7 +73,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <div className="text-2xl font-bold">{avgElo}</div>
-          <div className="text-sm text-gray-500">Avg ELO</div>
+          <div className="text-sm text-gray-500 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">Avg ELO</div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
           <div className="text-2xl font-bold text-emerald-400">{totalWins}</div>
@@ -124,7 +124,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 text-sm">
                 <div className="text-center">
                   <div className="font-semibold">{member.eloRating || 1200}</div>
-                  <div className="text-xs text-gray-500">ELO</div>
+                  <div className="text-xs text-gray-500 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO</div>
                 </div>
                 <div className="text-center">
                   <div className="font-semibold">{member.totalPosts || 0}</div>
