@@ -1114,13 +1114,14 @@ if (process.argv[1]?.includes('cron-v2')) {
 }
 
 // ==========================================
+
+// ==========================================
 // EXPORTED FUNCTIONS FOR PANEL
 // ==========================================
 
 export async function createDebateFromTopic(topic: string): Promise<string | null> {
   console.log(`\n⚔️ Creating debate from topic: ${topic}`);
   
-  // Get two random personas from different teams
   const allPersonas = await db.select().from(personas);
   const teamGroups: Record<string, typeof allPersonas> = {};
   
@@ -1134,7 +1135,6 @@ export async function createDebateFromTopic(topic: string): Promise<string | nul
   const teamIds = Object.keys(teamGroups);
   if (teamIds.length < 2) return null;
   
-  // Pick 2 random teams
   const shuffled = teamIds.sort(() => Math.random() - 0.5);
   const team1Id = shuffled[0];
   const team2Id = shuffled[1];
@@ -1142,16 +1142,15 @@ export async function createDebateFromTopic(topic: string): Promise<string | nul
   const persona1 = teamGroups[team1Id][Math.floor(Math.random() * teamGroups[team1Id].length)];
   const persona2 = teamGroups[team2Id][Math.floor(Math.random() * teamGroups[team2Id].length)];
   
-  // Get category
   const [category] = await db.select().from(categories).where(eq(categories.slug, 'trading')).limit(1);
   if (!category) return null;
   
-  // Create thread
-  const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50) + '-' + Math.random().toString(36).slice(2, 10);
+  const threadSlug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50) + '-' + Math.random().toString(36).slice(2, 10);
+  const debateSlug = 'debate-' + threadSlug;
   
   const [thread] = await db.insert(threads).values({
     title: `🥊 Debate: ${topic}`,
-    slug,
+    slug: threadSlug,
     summary: topic,
     categoryId: category.id,
     starterPersonaId: persona1.id,
@@ -1159,9 +1158,9 @@ export async function createDebateFromTopic(topic: string): Promise<string | nul
     postCount: 0,
   }).returning();
   
-  // Create debate
   const [debate] = await db.insert(debates).values({
     topic,
+    slug: debateSlug,
     description: topic,
     persona1Id: persona1.id,
     persona2Id: persona2.id,
@@ -1173,10 +1172,8 @@ export async function createDebateFromTopic(topic: string): Promise<string | nul
     totalRounds: 3,
   }).returning();
   
-  // Update thread with debateId
   await db.update(threads).set({ debateId: debate.id }).where(eq(threads.id, thread.id));
   
-  // Create first round
   await db.insert(debateRounds).values({
     debateId: debate.id,
     roundNumber: 1,
@@ -1189,11 +1186,9 @@ export async function createDebateFromTopic(topic: string): Promise<string | nul
 export async function createThreadFromTopic(topic: string, categorySlug?: string): Promise<string | null> {
   console.log(`\n💬 Creating thread from topic: ${topic}`);
   
-  // Get random persona
   const allPersonas = await db.select().from(personas);
   const persona = allPersonas[Math.floor(Math.random() * allPersonas.length)];
   
-  // Get category
   const catSlug = categorySlug || ['trading', 'ai-automation', 'ecommerce', 'content', 'freelancing'][Math.floor(Math.random() * 5)];
   const [category] = await db.select().from(categories).where(eq(categories.slug, catSlug)).limit(1);
   if (!category) return null;
@@ -1210,9 +1205,7 @@ export async function createThreadFromTopic(topic: string, categorySlug?: string
     postCount: 1,
   }).returning();
   
-  // Generate first post
-  const { generatePersonaResponse } = await import('./post-generator.js');
-  const content = await generatePersonaResponse(persona, `Write a forum post about: ${topic}`, null);
+  const content = await generatePost(persona, `Write a forum post about: ${topic}`, null, thread.id);
   
   await db.insert(posts).values({
     threadId: thread.id,
@@ -1234,6 +1227,5 @@ export async function advanceDebateRound(debateId: string): Promise<void> {
     throw new Error('Debate not found or not active');
   }
   
-  // Call existing continueDebate logic
   await continueDebate(debate);
 }
