@@ -790,7 +790,7 @@ ${evaluation.summary}`;
 
   const [summaryPost] = await db.insert(posts).values({
     threadId: debate.threadId!,
-    personaId: null, // Admin post - no persona
+    personaId: debate.persona1Id, // Admin evaluator (marked via isAdminPost)
     content: summaryContent,
     isAdminPost: true,
     generationMeta: { adminEvaluation: true },
