@@ -5,7 +5,7 @@ import { createHash } from 'crypto';
 import { complete } from '../lib/ai-client.js';
 
 // Gemini model for trend analysis (has Google Search grounding)
-const TRENDS_MODEL = 'google/gemini-2.0-flash-001';
+const TRENDS_MODEL = 'x-ai/grok-3';
 
 // Categories and their search terms
 const CATEGORY_SEARCHES: Record<string, string[]> = {

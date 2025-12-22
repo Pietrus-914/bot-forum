@@ -688,37 +688,38 @@ async function finishDebate(debateId: string): Promise<void> {
   // Admin evaluates using Claude
   const debateContent = debatePosts.map(p => `${p.personaName}: ${p.content}`).join('\n\n---\n\n');
   
-  const adminPrompt = `You are the ADMIN judge evaluating this debate.
+  const adminPrompt = `You are an IMPARTIAL AI ADMIN judge evaluating this debate. You have no team affiliation.
 
 TOPIC: "${debate.topic}"
 
-${team1?.name} (${persona1?.name}) - PRO
-${team2?.name} (${persona2?.name}) - CON
+${persona1?.name} (${team1?.name}) - PRO position
+${persona2?.name} (${team2?.name}) - CON position
 
 DEBATE TRANSCRIPT:
 ${debateContent}
 
-Evaluate both sides on a scale of 1-10 for each criteria:
-- Argumentation (logic, coherence)
-- Evidence (examples, data)
-- Persuasiveness (compelling arguments)
-- Engagement (addressing opponent's points)
-- Style (clarity, readability)
+Evaluate EACH participant on these 5 criteria (1-20 points each, max 100 total):
 
-Then determine the WINNER based on overall performance.
+1. 🎭 CHARACTER AUTHENTICITY (1-20): How well does the AI embody their assigned personality? Natural voice, consistent character traits.
+2. 🎯 TOPIC RELEVANCE (1-20): How well do they stay on topic? Are arguments directly related to the debate question?
+3. 💬 ARGUMENTATION QUALITY (1-20): Logic, coherence, structure of arguments. Use of evidence and examples.
+4. ⚔️ ENGAGEMENT (1-20): How well do they respond to opponent's points? Do they address counterarguments?
+5. ✍️ COMMUNICATION STYLE (1-20): Natural forum writing style, readability, appropriate tone.
 
-Return JSON:
+Determine the WINNER based on total score.
+
+Return ONLY valid JSON (no markdown, no extra text):
 {
-  "persona1Scores": { "argumentation": X, "evidence": X, "persuasiveness": X, "engagement": X, "style": X },
-  "persona2Scores": { "argumentation": X, "evidence": X, "persuasiveness": X, "engagement": X, "style": X },
+  "persona1Scores": { "authenticity": X, "relevance": X, "argumentation": X, "engagement": X, "style": X },
+  "persona2Scores": { "authenticity": X, "relevance": X, "argumentation": X, "engagement": X, "style": X },
   "persona1Total": X,
   "persona2Total": X,
   "winnerId": "${debate.persona1Id}" or "${debate.persona2Id}" or "draw",
-  "summary": "2-3 paragraph summary explaining the decision, highlighting strengths and weaknesses of each side"
+  "summary": "2-3 sentences explaining who won and why. Be specific about strengths and weaknesses."
 }`;
 
   const result = await complete(adminPrompt, {
-    model: 'anthropic/claude-3.5-sonnet',
+    model: 'x-ai/grok-3',
     maxTokens: 1500,
     temperature: 0.3,
   });
@@ -770,29 +771,26 @@ Return JSON:
 
 **Topic:** ${debate.topic}
 
-### Results
+### 📊 Final Scores
 
-**${persona1?.name} (${team1?.name}) - PRO**
-- Score: ${evaluation.persona1Total}/50
-- Argumentation: ${evaluation.persona1Scores.argumentation}/10
-- Evidence: ${evaluation.persona1Scores.evidence}/10
-- Persuasiveness: ${evaluation.persona1Scores.persuasiveness}/10
+| Criteria | ${persona1?.name} (PRO) | ${persona2?.name} (CON) |
+|----------|------------------------|------------------------|
+| 🎭 Character Authenticity | ${evaluation.persona1Scores.authenticity}/20 | ${evaluation.persona2Scores.authenticity}/20 |
+| 🎯 Topic Relevance | ${evaluation.persona1Scores.relevance}/20 | ${evaluation.persona2Scores.relevance}/20 |
+| 💬 Argumentation | ${evaluation.persona1Scores.argumentation}/20 | ${evaluation.persona2Scores.argumentation}/20 |
+| ⚔️ Engagement | ${evaluation.persona1Scores.engagement}/20 | ${evaluation.persona2Scores.engagement}/20 |
+| ✍️ Communication | ${evaluation.persona1Scores.style}/20 | ${evaluation.persona2Scores.style}/20 |
+| **TOTAL** | **${evaluation.persona1Total}/100** | **${evaluation.persona2Total}/100** |
 
-**${persona2?.name} (${team2?.name}) - CON**
-- Score: ${evaluation.persona2Total}/50
-- Argumentation: ${evaluation.persona2Scores.argumentation}/10
-- Evidence: ${evaluation.persona2Scores.evidence}/10
-- Persuasiveness: ${evaluation.persona2Scores.persuasiveness}/10
+### 🏆 Winner: ${evaluation.winnerId === 'draw' ? 'DRAW' : evaluation.winnerId === debate.persona1Id ? `${persona1?.name} (${team1?.name})` : `${persona2?.name} (${team2?.name})`}
 
-### 🎯 Winner: ${evaluation.winnerId === 'draw' ? 'DRAW' : evaluation.winnerId === debate.persona1Id ? `${persona1?.name} (${team1?.name})` : `${persona2?.name} (${team2?.name})`}
-
-### Judge's Analysis
+### 📝 Judge's Analysis
 
 ${evaluation.summary}`;
 
   const [summaryPost] = await db.insert(posts).values({
     threadId: debate.threadId!,
-    personaId: debate.persona1Id, // Placeholder - admin post
+    personaId: null, // Admin post - no persona
     content: summaryContent,
     isAdminPost: true,
     generationMeta: { adminEvaluation: true },

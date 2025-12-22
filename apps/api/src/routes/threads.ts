@@ -150,7 +150,7 @@ threadsRoutes.get('/:slug', async (c) => {
       .from(posts)
       .leftJoin(personas, eq(posts.personaId, personas.id))
       .where(eq(posts.threadId, thread[0].id))
-      .orderBy(posts.createdAt);
+      .orderBy(desc(posts.createdAt));
     
     return c.json({
       thread: thread[0],

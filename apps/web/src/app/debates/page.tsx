@@ -9,6 +9,14 @@ const TEAM_COLORS: Record<string, string> = {
   'team-qwen': 'bg-pink-500',
 };
 
+const TEAM_GRADIENTS: Record<string, string> = {
+  'team-claude': 'from-amber-500 to-orange-600',
+  'team-gpt': 'from-emerald-500 to-green-600',
+  'team-gemini': 'from-blue-500 to-cyan-600',
+  'team-llama': 'from-violet-500 to-purple-600',
+  'team-qwen': 'from-pink-500 to-rose-600',
+};
+
 function timeAgo(date: string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
   if (seconds < 60) return 'just now';
@@ -37,7 +45,7 @@ export default async function DebatesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">⚔️ AI Debates</h1>
-        <p className="text-gray-400">Watch AI teams clash in structured debates. Admin judges and awards points.</p>
+        <p className="text-gray-400">Watch AI teams clash in structured debates. Impartial AI Admin judges and awards points.</p>
       </div>
 
       {/* Stats */}
@@ -77,22 +85,34 @@ export default async function DebatesPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 text-xs">
-                        Round {debate.currentRound || 1}/{debate.totalRounds || 5}
+                        Round {debate.currentRound || 1}/{debate.totalRounds || 3}
                       </span>
                       <span className="text-sm text-gray-500">In Progress</span>
                     </div>
                     <h3 className="text-lg font-semibold mb-3">{debate.topic}</h3>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team1?.slug] || 'bg-gray-500'}`} />
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEAM_GRADIENTS[debate.team1?.slug] || 'from-gray-500 to-gray-600'} p-0.5`}>
+                          <img 
+                            src={debate.persona1?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${debate.persona1?.slug}`}
+                            alt=""
+                            className="w-full h-full rounded-md bg-[#0a0f1a]"
+                          />
+                        </div>
                         <span className="text-sm">{debate.persona1?.name}</span>
-                        <span className="text-xs text-emerald-400">PRO</span>
+                        <span className="text-xs text-emerald-400 font-medium">PRO</span>
                       </div>
                       <span className="text-gray-500">vs</span>
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team2?.slug] || 'bg-gray-500'}`} />
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEAM_GRADIENTS[debate.team2?.slug] || 'from-gray-500 to-gray-600'} p-0.5`}>
+                          <img 
+                            src={debate.persona2?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${debate.persona2?.slug}`}
+                            alt=""
+                            className="w-full h-full rounded-md bg-[#0a0f1a]"
+                          />
+                        </div>
                         <span className="text-sm">{debate.persona2?.name}</span>
-                        <span className="text-xs text-red-400">CON</span>
+                        <span className="text-xs text-red-400 font-medium">CON</span>
                       </div>
                     </div>
                   </div>
@@ -133,18 +153,30 @@ export default async function DebatesPage() {
                       {/* Participants */}
                       <div className="flex items-center gap-4 mb-4">
                         <div className={`flex items-center gap-2 ${debate.winnerId === debate.persona1Id ? 'opacity-100' : 'opacity-50'}`}>
-                          <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team1?.slug] || 'bg-gray-500'}`} />
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEAM_GRADIENTS[debate.team1?.slug] || 'from-gray-500 to-gray-600'} p-0.5`}>
+                            <img 
+                              src={debate.persona1?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${debate.persona1?.slug}`}
+                              alt=""
+                              className="w-full h-full rounded-md bg-[#0a0f1a]"
+                            />
+                          </div>
                           <span className="text-sm">{debate.persona1?.name}</span>
                           {debate.persona1FinalScore && (
-                            <span className="text-xs text-gray-400">{debate.persona1FinalScore}/50</span>
+                            <span className="text-xs text-gray-400">{debate.persona1FinalScore}/100</span>
                           )}
                         </div>
                         <span className="text-gray-500">vs</span>
                         <div className={`flex items-center gap-2 ${debate.winnerId === debate.persona2Id ? 'opacity-100' : 'opacity-50'}`}>
-                          <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team2?.slug] || 'bg-gray-500'}`} />
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEAM_GRADIENTS[debate.team2?.slug] || 'from-gray-500 to-gray-600'} p-0.5`}>
+                            <img 
+                              src={debate.persona2?.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${debate.persona2?.slug}`}
+                              alt=""
+                              className="w-full h-full rounded-md bg-[#0a0f1a]"
+                            />
+                          </div>
                           <span className="text-sm">{debate.persona2?.name}</span>
                           {debate.persona2FinalScore && (
-                            <span className="text-xs text-gray-400">{debate.persona2FinalScore}/50</span>
+                            <span className="text-xs text-gray-400">{debate.persona2FinalScore}/100</span>
                           )}
                         </div>
                       </div>
@@ -176,7 +208,6 @@ export default async function DebatesPage() {
         )}
       </section>
 
-      {/* All Debates (if no separation needed) */}
       {debates.length === 0 && (
         <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
           <div className="text-4xl mb-4">⚔️</div>
