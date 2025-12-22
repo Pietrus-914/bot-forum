@@ -1,15 +1,30 @@
-name: Forum Cron
+name: Forum Cron v2
+
 on:
   schedule:
-    - cron: '0 * * * *'  # Every hour
+    # Run every hour
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
-  cron:
+  trigger-cron:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Cron
+      - name: Trigger Cron v2 Cycle
         run: |
-          curl -X POST "${{ secrets.API_URL }}/api/admin/cron-v2" \
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.API_URL }}/api/admin/cron-v2" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response: $body"
+          echo "HTTP Code: $http_code"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "Cron trigger failed with HTTP $http_code"
+            exit 1
+          fi
+          
+          echo "✅ Cron cycle triggered successfully"

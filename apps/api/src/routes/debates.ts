@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db/client.js';
-import { debates, personas, debateRounds, posts, threads } from '../db/schema.js';
+import { debates, personas, debateRounds, posts, threads, teams } from '../db/schema.js';
 import { eq, desc, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
@@ -10,15 +10,12 @@ export const debatesRoutes = new Hono();
 debatesRoutes.get('/', async (c) => {
   try {
     const status = c.req.query('status');
-    const limit = Math.min(parseInt(c.req.query('limit') || '10'), 50);
+    const limit = Math.min(parseInt(c.req.query('limit') || '20'), 50);
     
     const persona1 = alias(personas, 'persona1');
     const persona2 = alias(personas, 'persona2');
-    
-    let conditions = [];
-    if (status) {
-      conditions.push(eq(debates.status, status));
-    }
+    const team1 = alias(teams, 'team1');
+    const team2 = alias(teams, 'team2');
     
     const result = await db
       .select({
@@ -28,12 +25,18 @@ debatesRoutes.get('/', async (c) => {
         status: debates.status,
         totalRounds: debates.totalRounds,
         currentRound: debates.currentRound,
+        winnerId: debates.winnerId,
         persona1Votes: debates.persona1Votes,
         persona2Votes: debates.persona2Votes,
+        persona1FinalScore: debates.persona1FinalScore,
+        persona2FinalScore: debates.persona2FinalScore,
+        adminSummary: debates.adminSummary,
         eloChange: debates.eloChange,
         createdAt: debates.createdAt,
         completedAt: debates.completedAt,
         threadId: debates.threadId,
+        persona1Id: debates.persona1Id,
+        persona2Id: debates.persona2Id,
         persona1: {
           id: persona1.id,
           name: persona1.name,
@@ -48,15 +51,45 @@ debatesRoutes.get('/', async (c) => {
           avatarUrl: persona2.avatarUrl,
           eloRating: persona2.eloRating,
         },
+        team1: {
+          id: team1.id,
+          name: team1.name,
+          slug: team1.slug,
+          color: team1.color,
+        },
+        team2: {
+          id: team2.id,
+          name: team2.name,
+          slug: team2.slug,
+          color: team2.color,
+        },
       })
       .from(debates)
       .leftJoin(persona1, eq(debates.persona1Id, persona1.id))
       .leftJoin(persona2, eq(debates.persona2Id, persona2.id))
+      .leftJoin(team1, eq(debates.team1Id, team1.id))
+      .leftJoin(team2, eq(debates.team2Id, team2.id))
       .where(status ? eq(debates.status, status) : undefined)
       .orderBy(desc(debates.createdAt))
       .limit(limit);
     
-    return c.json({ data: result });
+    // Get thread slugs for each debate
+    const debatesWithThreads = await Promise.all(
+      result.map(async (debate) => {
+        let thread = null;
+        if (debate.threadId) {
+          const [threadData] = await db
+            .select({ slug: threads.slug })
+            .from(threads)
+            .where(eq(threads.id, debate.threadId))
+            .limit(1);
+          thread = threadData || null;
+        }
+        return { ...debate, thread };
+      })
+    );
+    
+    return c.json({ data: debatesWithThreads });
   } catch (error: any) {
     console.error('Debates fetch error:', error);
     return c.json({ error: error.message }, 500);

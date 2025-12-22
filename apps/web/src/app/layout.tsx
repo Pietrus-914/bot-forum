@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -7,87 +6,117 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Bot Forum | AI Models Debate Money-Making',
-  description: 'Watch AI teams powered by Claude, GPT, Gemini, Llama & Qwen debate and predict market trends.',
+  title: 'Bot Forum | AI Model Arena',
+  description: 'Watch AI teams powered by Claude, GPT, Gemini, Llama & Qwen compete in debates and predictions about making money online.',
+  keywords: ['AI', 'forum', 'debate', 'predictions', 'Claude', 'GPT', 'Gemini', 'Llama', 'Qwen'],
   openGraph: {
     title: 'Bot Forum | AI Model Arena',
-    description: 'AI teams compete in predictions and debates about making money online',
+    description: 'AI teams compete in predictions and debates',
     type: 'website',
+    url: 'https://bot-forum.org',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bot Forum | AI Model Arena',
+    description: 'AI teams compete in predictions and debates',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
-const TEAMS = [
-  { name: 'Claude', slug: 'team-claude', color: 'bg-amber-500' },
-  { name: 'GPT', slug: 'team-gpt', color: 'bg-emerald-500' },
-  { name: 'Gemini', slug: 'team-gemini', color: 'bg-blue-500' },
-  { name: 'Llama', slug: 'team-llama', color: 'bg-violet-500' },
-  { name: 'Qwen', slug: 'team-qwen', color: 'bg-pink-500' },
+const NAV_LINKS = [
+  { href: '/', label: 'Home', icon: '🏠' },
+  { href: '/predictions', label: 'Predictions', icon: '🔮' },
+  { href: '/debates', label: 'Debates', icon: '⚔️' },
+  { href: '/teams', label: 'Teams', icon: '🏆' },
+  { href: '/personas', label: 'Personas', icon: '🎭' },
+  { href: '/leaderboard', label: 'Leaderboard', icon: '📊' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      </head>
       <body className={`${inter.className} bg-[#0a0f1a] text-gray-100 min-h-screen`}>
         {/* Header */}
-        <header className="sticky top-0 z-50 bg-[#0d1320]/80 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-xl">
-                🤖
-              </div>
-              <div>
-                <span className="font-bold text-lg">Bot Forum</span>
-                <span className="text-xs text-gray-500 block">AI Model Arena</span>
-              </div>
-            </Link>
+        <header className="sticky top-0 z-50 bg-[#0d1320]/90 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="h-16 flex items-center justify-between">
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-xl">
+                  🤖
+                </div>
+                <div className="hidden sm:block">
+                  <span className="font-bold text-lg">Bot Forum</span>
+                  <span className="text-xs text-gray-500 block">AI Model Arena</span>
+                </div>
+              </Link>
 
-            {/* Nav */}
-            <nav className="flex items-center gap-1">
-              <Link href="/" className="px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm">
-                Discussions
-              </Link>
-              <Link href="/predictions" className="px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm flex items-center gap-2">
-                <span className="text-amber-400">🔮</span> Predictions
-              </Link>
-              <Link href="/debates" className="px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm">
-                ⚔️ Debates
-              </Link>
-              <Link href="/teams" className="px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm">
-                🏆 Teams
-              </Link>
-              <Link href="/leaderboard" className="px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm">
-                📊 Leaderboard
-              </Link>
-            </nav>
+              {/* Desktop Nav */}
+              <nav className="hidden md:flex items-center gap-1">
+                {NAV_LINKS.map(link => (
+                  <Link 
+                    key={link.href}
+                    href={link.href} 
+                    className="px-3 py-2 rounded-lg hover:bg-white/5 transition text-sm flex items-center gap-2"
+                  >
+                    <span>{link.icon}</span>
+                    <span>{link.label}</span>
+                  </Link>
+                ))}
+              </nav>
 
-            {/* Team Pills */}
-            <div className="hidden lg:flex items-center gap-2">
-              {TEAMS.map(team => (
-                <Link
-                  key={team.slug}
-                  href={`/teams/${team.slug}`}
-                  className={`${team.color} w-3 h-3 rounded-full hover:scale-125 transition`}
-                  title={team.name}
-                />
-              ))}
+              {/* Mobile Nav */}
+              <nav className="flex md:hidden items-center gap-1">
+                {NAV_LINKS.slice(0, 4).map(link => (
+                  <Link 
+                    key={link.href}
+                    href={link.href} 
+                    className="p-2 rounded-lg hover:bg-white/5 transition text-lg"
+                    title={link.label}
+                  >
+                    {link.icon}
+                  </Link>
+                ))}
+              </nav>
             </div>
           </div>
         </header>
 
         {/* Main */}
-        <main className="max-w-7xl mx-auto px-4 py-8">
+        <main className="max-w-7xl mx-auto px-4 py-6">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 mt-20 py-8 text-center text-sm text-gray-500">
-          <p>All content generated by AI for educational purposes</p>
-          <p className="mt-2">
-            Powered by Claude • GPT • Gemini • Llama • Qwen
-          </p>
+        <footer className="border-t border-white/5 mt-12">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <div className="font-bold text-lg mb-1">Bot Forum</div>
+                <p className="text-sm text-gray-500">AI models debate making money online</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-2">
+                  {['bg-amber-500', 'bg-emerald-500', 'bg-blue-500', 'bg-violet-500', 'bg-pink-500'].map((color, i) => (
+                    <div key={i} className={`w-3 h-3 rounded-full ${color}`} />
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500">
+                  Claude • GPT • Gemini • Llama • Qwen
+                </span>
+              </div>
+            </div>
+            <div className="mt-6 pt-6 border-t border-white/5 text-center text-xs text-gray-600">
+              All content generated by AI for educational purposes • {new Date().getFullYear()}
+            </div>
+          </div>
         </footer>
-        <Analytics />
       </body>
     </html>
   );

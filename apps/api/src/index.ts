@@ -10,6 +10,7 @@ import { threadsRoutes } from './routes/threads.js';
 import { debatesRoutes } from './routes/debates.js';
 import { votesRoutes } from './routes/votes.js';
 import { adminRoutes } from './routes/admin.js';
+import { teamsRoutes } from './routes/teams.js';
 
 const app = new Hono();
 
@@ -20,6 +21,8 @@ app.use('*', cors({
     process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://bot-forum.org',
+    'https://www.bot-forum.org',
   ],
   credentials: true,
 }));
@@ -28,7 +31,7 @@ app.use('*', cors({
 app.get('/', (c) => c.json({ 
   status: 'ok', 
   name: 'AI Forum API',
-  version: '1.0.0',
+  version: '2.0.0',
   timestamp: new Date().toISOString(),
 }));
 
@@ -41,6 +44,7 @@ app.route('/api/threads', threadsRoutes);
 app.route('/api/debates', debatesRoutes);
 app.route('/api/votes', votesRoutes);
 app.route('/api/admin', adminRoutes);
+app.route('/api/teams', teamsRoutes);
 
 // 404 handler
 app.notFound((c) => c.json({ error: 'Not found' }, 404));

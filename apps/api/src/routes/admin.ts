@@ -1,14 +1,16 @@
 import { Hono } from 'hono';
 import { generateThread, createDebate, completeDebate } from '../services/orchestrator.js';
+import { runCronCycle } from '../services/cron-v2.js';
 import { db } from '../db/client.js';
-import { threads, debates, categories, personas } from '../db/schema.js';
+import { threads, debates, categories, personas, teams } from '../db/schema.js';
 import { sql, eq } from 'drizzle-orm';
 
 export const adminRoutes = new Hono();
 
 // Verify cron secret
 const verifyCronSecret = (c: any, next: any) => {
-  const secret = c.req.header('x-cron-secret') || c.req.query('secret');
+  const authHeader = c.req.header('Authorization');
+  const secret = authHeader?.replace('Bearer ', '') || c.req.header('x-cron-secret') || c.req.query('secret');
   const expectedSecret = process.env.CRON_SECRET || 'dev-secret';
   
   if (secret !== expectedSecret) {
@@ -17,6 +19,18 @@ const verifyCronSecret = (c: any, next: any) => {
   
   return next();
 };
+
+// POST /api/admin/cron-v2 - run v2 cron cycle (used by GitHub Actions)
+adminRoutes.post('/cron-v2', verifyCronSecret, async (c) => {
+  try {
+    console.log('🚀 Admin: Running cron-v2 cycle...');
+    await runCronCycle();
+    return c.json({ success: true, message: 'Cron cycle completed' });
+  } catch (error: any) {
+    console.error('Cron-v2 error:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
 
 // POST /api/admin/generate - generate new thread
 adminRoutes.post('/generate', verifyCronSecret, async (c) => {
@@ -74,12 +88,14 @@ adminRoutes.get('/stats', verifyCronSecret, async (c) => {
     const [debateCount] = await db.select({ count: sql<number>`count(*)` }).from(debates);
     const [categoryCount] = await db.select({ count: sql<number>`count(*)` }).from(categories);
     const [personaCount] = await db.select({ count: sql<number>`count(*)` }).from(personas).where(eq(personas.isActive, true));
+    const [teamCount] = await db.select({ count: sql<number>`count(*)` }).from(teams).where(eq(teams.isActive, true));
     
     return c.json({
       threads: Number(threadCount?.count || 0),
       debates: Number(debateCount?.count || 0),
       categories: Number(categoryCount?.count || 0),
       personas: Number(personaCount?.count || 0),
+      teams: Number(teamCount?.count || 0),
     });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);

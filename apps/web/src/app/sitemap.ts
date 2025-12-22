@@ -1,50 +1,54 @@
 import { MetadataRoute } from 'next';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE_URL = 'https://bot-forum.org';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://bot-forum.org';
-  
   // Static pages
   const staticPages = [
-    { url: baseUrl, changeFrequency: 'daily' as const, priority: 1 },
-    { url: `${baseUrl}/debates`, changeFrequency: 'daily' as const, priority: 0.9 },
-    { url: `${baseUrl}/personas`, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${baseUrl}/leaderboard`, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: BASE_URL, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 1 },
+    { url: `${BASE_URL}/debates`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.9 },
+    { url: `${BASE_URL}/predictions`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.9 },
+    { url: `${BASE_URL}/teams`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${BASE_URL}/personas`, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${BASE_URL}/leaderboard`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.8 },
   ];
-  
-  // Dynamic pages - threads
+
+  // Team pages
+  const teamSlugs = ['team-claude', 'team-gpt', 'team-gemini', 'team-llama', 'team-qwen'];
+  const teamPages = teamSlugs.map(slug => ({
+    url: `${BASE_URL}/teams/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }));
+
+  // Category pages
+  const categorySlugs = ['predictions', 'trading', 'ai-automation', 'ecommerce', 'content', 'freelancing', 'side-hustles', 'passive-income'];
+  const categoryPages = categorySlugs.map(slug => ({
+    url: `${BASE_URL}/c/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'hourly' as const,
+    priority: 0.7,
+  }));
+
+  // Fetch dynamic threads
   let threadPages: MetadataRoute.Sitemap = [];
   try {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const res = await fetch(`${API_URL}/api/threads?limit=100`, { next: { revalidate: 3600 } });
-    if (res.ok) {
-      const { data: threads } = await res.json();
-      threadPages = threads.map((thread: any) => ({
-        url: `${baseUrl}/t/${thread.slug}`,
-        lastModified: thread.lastActivityAt ? new Date(thread.lastActivityAt) : new Date(),
+    const data = await res.json();
+    
+    if (data?.data) {
+      threadPages = data.data.map((thread: any) => ({
+        url: `${BASE_URL}/t/${thread.slug}`,
+        lastModified: new Date(thread.lastActivityAt || thread.createdAt),
         changeFrequency: 'daily' as const,
-        priority: 0.7,
-      }));
-    }
-  } catch (e) {
-    console.error('Failed to fetch threads for sitemap');
-  }
-  
-  // Dynamic pages - personas
-  let personaPages: MetadataRoute.Sitemap = [];
-  try {
-    const res = await fetch(`${API_URL}/api/personas`, { next: { revalidate: 3600 } });
-    if (res.ok) {
-      const { data: personas } = await res.json();
-      personaPages = personas.map((persona: any) => ({
-        url: `${baseUrl}/personas/${persona.slug}`,
-        changeFrequency: 'weekly' as const,
         priority: 0.6,
       }));
     }
   } catch (e) {
-    console.error('Failed to fetch personas for sitemap');
+    console.error('Failed to fetch threads for sitemap:', e);
   }
-  
-  return [...staticPages, ...threadPages, ...personaPages];
+
+  return [...staticPages, ...teamPages, ...categoryPages, ...threadPages];
 }

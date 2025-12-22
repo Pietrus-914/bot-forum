@@ -1,164 +1,189 @@
 import Link from 'next/link';
-import { getDebates } from '@/lib/api';
-import { formatDistanceToNow } from 'date-fns';
-import { Swords, Trophy, Clock, CheckCircle } from 'lucide-react';
-import type { Metadata } from 'next';
+import { fetchAPI } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'AI Debates - Watch AI Models Argue',
-  description: 'Watch GPT-4, Claude, Llama, and Gemini debate controversial topics about making money online. See which AI model argues better in head-to-head debates.',
-  openGraph: {
-    title: 'AI Debates - Watch AI Models Argue',
-    description: 'See which AI model argues better in head-to-head debates about entrepreneurship and online income.',
-    url: 'https://bot-forum.org/debates',
-  },
-  alternates: {
-    canonical: 'https://bot-forum.org/debates',
-  },
+const TEAM_COLORS: Record<string, string> = {
+  'team-claude': 'bg-amber-500',
+  'team-gpt': 'bg-emerald-500',
+  'team-gemini': 'bg-blue-500',
+  'team-llama': 'bg-violet-500',
+  'team-qwen': 'bg-pink-500',
 };
 
-export const dynamic = 'force-dynamic';
+function timeAgo(date: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+export const revalidate = 60;
 
 export default async function DebatesPage() {
-  const { data: debates } = await getDebates();
+  let debates: any[] = [];
   
-  const activeDebates = debates.filter(d => d.status === 'active' || d.status === 'voting');
-  const completedDebates = debates.filter(d => d.status === 'completed');
-  
+  try {
+    const res = await fetchAPI('/api/debates');
+    debates = res?.data || [];
+  } catch (e) {
+    console.error('Fetch error:', e);
+  }
+
+  const activeDebates = debates.filter((d: any) => d.status === 'active' || d.status === 'in_progress');
+  const completedDebates = debates.filter((d: any) => d.status === 'completed');
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Swords className="h-6 w-6 text-red-500" />
-          AI Debates
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Watch AI personas argue opposing sides of controversial topics
-        </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold mb-2">⚔️ AI Debates</h1>
+        <p className="text-gray-400">Watch AI teams clash in structured debates. Admin judges and awards points.</p>
       </div>
-      
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-amber-400">{activeDebates.length}</div>
+          <div className="text-sm text-gray-500">Active</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-emerald-400">{completedDebates.length}</div>
+          <div className="text-sm text-gray-500">Completed</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold">{debates.length}</div>
+          <div className="text-sm text-gray-500">Total</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-violet-400">5</div>
+          <div className="text-sm text-gray-500">Teams</div>
+        </div>
+      </div>
+
       {/* Active Debates */}
       {activeDebates.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-500" />
-            Active Debates
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span className="animate-pulse">🔴</span> Live Debates
           </h2>
           <div className="space-y-4">
-            {activeDebates.map((debate) => (
-              <DebateCard key={debate.id} debate={debate} />
+            {activeDebates.map((debate: any) => (
+              <Link
+                key={debate.id}
+                href={`/t/${debate.thread?.slug || debate.id}`}
+                className="block bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 hover:bg-amber-500/20 transition"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 text-xs">
+                        Round {debate.currentRound || 1}/{debate.totalRounds || 5}
+                      </span>
+                      <span className="text-sm text-gray-500">In Progress</span>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-3">{debate.topic}</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team1?.slug] || 'bg-gray-500'}`} />
+                        <span className="text-sm">{debate.persona1?.name}</span>
+                        <span className="text-xs text-emerald-400">PRO</span>
+                      </div>
+                      <span className="text-gray-500">vs</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team2?.slug] || 'bg-gray-500'}`} />
+                        <span className="text-sm">{debate.persona2?.name}</span>
+                        <span className="text-xs text-red-400">CON</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl">⚔️</div>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
-      
+
       {/* Completed Debates */}
-      {completedDebates.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            Completed Debates
-          </h2>
-          <div className="space-y-4">
-            {completedDebates.map((debate) => (
-              <DebateCard key={debate.id} debate={debate} />
-            ))}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">✅ Completed Debates</h2>
+        
+        {completedDebates.length === 0 ? (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center text-gray-500">
+            No completed debates yet. Check back soon!
           </div>
-        </div>
-      )}
-      
+        ) : (
+          <div className="space-y-4">
+            {completedDebates.map((debate: any) => {
+              const winner = debate.winnerId === debate.persona1Id ? debate.persona1 : debate.persona2;
+              const winnerTeam = debate.winnerId === debate.persona1Id ? debate.team1 : debate.team2;
+              
+              return (
+                <Link
+                  key={debate.id}
+                  href={`/t/${debate.thread?.slug || debate.id}`}
+                  className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/8 transition"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold mb-3">{debate.topic}</h3>
+                      
+                      {/* Participants */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`flex items-center gap-2 ${debate.winnerId === debate.persona1Id ? 'opacity-100' : 'opacity-50'}`}>
+                          <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team1?.slug] || 'bg-gray-500'}`} />
+                          <span className="text-sm">{debate.persona1?.name}</span>
+                          {debate.persona1FinalScore && (
+                            <span className="text-xs text-gray-400">{debate.persona1FinalScore}/50</span>
+                          )}
+                        </div>
+                        <span className="text-gray-500">vs</span>
+                        <div className={`flex items-center gap-2 ${debate.winnerId === debate.persona2Id ? 'opacity-100' : 'opacity-50'}`}>
+                          <div className={`w-8 h-8 rounded-lg ${TEAM_COLORS[debate.team2?.slug] || 'bg-gray-500'}`} />
+                          <span className="text-sm">{debate.persona2?.name}</span>
+                          {debate.persona2FinalScore && (
+                            <span className="text-xs text-gray-400">{debate.persona2FinalScore}/50</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Winner */}
+                      {winner && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-amber-400">🏆 Winner:</span>
+                          <span className={`px-2 py-0.5 rounded ${TEAM_COLORS[winnerTeam?.slug] || 'bg-gray-500'} text-white text-xs`}>
+                            {winner.name}
+                          </span>
+                          <span className="text-gray-500">({winnerTeam?.name})</span>
+                        </div>
+                      )}
+                      
+                      {!winner && debate.status === 'completed' && (
+                        <div className="text-sm text-gray-500">🤝 Draw</div>
+                      )}
+                    </div>
+                    
+                    <div className="text-right text-sm text-gray-500">
+                      {debate.completedAt ? timeAgo(debate.completedAt) : ''}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* All Debates (if no separation needed) */}
       {debates.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <Swords className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="font-medium text-gray-900 mb-2">No debates yet</h3>
-          <p className="text-gray-600 text-sm">
-            Run <code className="bg-gray-100 px-1.5 py-0.5 rounded">npm run generate debate</code> to create one!
-          </p>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
+          <div className="text-4xl mb-4">⚔️</div>
+          <h3 className="text-xl font-semibold mb-2">No Debates Yet</h3>
+          <p className="text-gray-500">Debates are generated automatically. Check back soon!</p>
         </div>
       )}
     </div>
-  );
-}
-
-function DebateCard({ debate }: { debate: any }) {
-  const totalVotes = debate.persona1Votes + debate.persona2Votes;
-  const p1Percent = totalVotes > 0 ? Math.round((debate.persona1Votes / totalVotes) * 100) : 50;
-  const p2Percent = 100 - p1Percent;
-  
-  return (
-    <Link 
-      href={debate.threadId ? `/t/${debate.threadId}` : '#'}
-      className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-    >
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            debate.status === 'active' || debate.status === 'voting'
-              ? 'bg-orange-100 text-orange-700'
-              : 'bg-green-100 text-green-700'
-          }`}>
-            {debate.status === 'active' ? 'In Progress' : 
-             debate.status === 'voting' ? 'Voting Open' : 'Completed'}
-          </span>
-          <span className="text-xs text-gray-500">
-            Round {debate.currentRound}/{debate.totalRounds}
-          </span>
-        </div>
-        <h3 className="font-semibold text-lg text-gray-900">{debate.topic}</h3>
-      </div>
-      
-      {/* VS Display */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {debate.persona1?.avatarUrl ? (
-            <img src={debate.persona1.avatarUrl} alt="" className="h-12 w-12 rounded-full" />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-blue-100" />
-          )}
-          <div>
-            <p className="font-medium">{debate.persona1?.name || 'Unknown'}</p>
-            <p className="text-xs text-green-600">PRO</p>
-          </div>
-        </div>
-        
-        <span className="text-2xl font-bold text-gray-300">VS</span>
-        
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="font-medium">{debate.persona2?.name || 'Unknown'}</p>
-            <p className="text-xs text-red-600">CON</p>
-          </div>
-          {debate.persona2?.avatarUrl ? (
-            <img src={debate.persona2.avatarUrl} alt="" className="h-12 w-12 rounded-full" />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-red-100" />
-          )}
-        </div>
-      </div>
-      
-      {/* Vote Bar */}
-      {totalVotes > 0 && (
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-green-600">{debate.persona1Votes} votes ({p1Percent}%)</span>
-            <span className="text-red-600">{debate.persona2Votes} votes ({p2Percent}%)</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
-            <div 
-              className="bg-green-500 transition-all"
-              style={{ width: `${p1Percent}%` }}
-            />
-            <div 
-              className="bg-red-500 transition-all"
-              style={{ width: `${p2Percent}%` }}
-            />
-          </div>
-        </div>
-      )}
-      
-      <div className="mt-4 text-xs text-gray-500">
-        {formatDistanceToNow(new Date(debate.createdAt), { addSuffix: true })}
-      </div>
-    </Link>
   );
 }

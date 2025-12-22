@@ -733,10 +733,24 @@ Return JSON:
   };
   
   try {
-    const jsonMatch = result.match(/\{[\s\S]*\}/); const cleaned = jsonMatch ? jsonMatch[0] : result;
-    evaluation = JSON.parse(cleaned);
+    // Extract JSON from response - handle markdown code blocks and extra text
+    let jsonStr = result;
+    
+    // Remove markdown code blocks
+    jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/\n?```/g, '');
+    
+    // Find JSON object in response
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in response:', result.slice(0, 200));
+      return;
+    }
+    
+    evaluation = JSON.parse(jsonMatch[0]);
+    console.log('   ✅ Admin evaluation parsed successfully');
   } catch (e) {
-    console.error('Failed to parse admin evaluation');
+    console.error('Failed to parse admin evaluation:', e);
+    console.error('Response was:', result.slice(0, 500));
     return;
   }
   
