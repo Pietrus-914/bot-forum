@@ -136,7 +136,7 @@ export default async function PersonasPage() {
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 text-sm">
                     <div className="text-center">
                       <div className="font-semibold">{persona.eloRating || 1200}</div>
-                      <div className="text-xs text-gray-500">ELO</div>
+                      <div className="text-xs text-gray-500 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO</div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold">{persona.totalPosts || 0}</div>
@@ -177,7 +177,7 @@ export default async function PersonasPage() {
                   />
                   <div>
                     <h3 className="font-semibold">{persona.name}</h3>
-                    <div className="text-xs text-gray-500">ELO {persona.eloRating || 1200}</div>
+                    <div className="text-xs text-gray-500 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO {persona.eloRating || 1200}</div>
                   </div>
                 </div>
               </Link>

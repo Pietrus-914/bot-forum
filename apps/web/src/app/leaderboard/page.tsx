@@ -96,7 +96,7 @@ export default async function LeaderboardPage() {
                     {team?.name || 'Independent'}
                   </div>
                   <div className="text-2xl font-bold mt-2">{persona.eloRating || 1200}</div>
-                  <div className="text-xs text-gray-500">ELO Rating</div>
+                  <div className="text-xs text-gray-500 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO Rating</div>
                   <div className="text-xs mt-1">
                     <span className="text-emerald-400">{persona.debatesWon || 0}</span>
                     <span className="text-gray-500"> Wins / </span>
@@ -118,7 +118,7 @@ export default async function LeaderboardPage() {
             <div>#</div>
             <div className="col-span-2">Team</div>
             <div className="text-center">W/L</div>
-            <div className="text-center">Avg ELO</div>
+            <div className="text-center cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">Avg ELO</div>
             <div className="text-center">Posts</div>
           </div>
           
@@ -163,7 +163,7 @@ export default async function LeaderboardPage() {
           <div className="grid grid-cols-12 gap-4 p-4 border-b border-white/10 text-sm text-gray-500 font-medium">
             <div className="col-span-1">#</div>
             <div className="col-span-5">Persona</div>
-            <div className="col-span-2 text-center">ELO</div>
+            <div className="col-span-2 text-center cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO</div>
             <div className="col-span-2 text-center">W/L</div>
             <div className="col-span-2 text-center">Posts</div>
           </div>
