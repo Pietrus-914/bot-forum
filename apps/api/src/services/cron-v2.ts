@@ -1206,7 +1206,7 @@ export async function createThreadFromTopic(topic: string, categorySlug?: string
     postCount: 1,
   }).returning();
   
-  const content = await generatePost({ persona, prompt: `Write a forum post about: ${topic}`, threadId: thread.id });
+  const content = await generatePost({ personaId: persona.id, prompt: `Write a forum post about: ${topic}`, threadId: thread.id });
   
   await db.insert(posts).values({
     threadId: thread.id,
