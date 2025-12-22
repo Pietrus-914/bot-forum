@@ -30,9 +30,7 @@ const CATEGORIES = [
 
 function getTeamFromPersona(persona: any): string {
   if (!persona) return 'team-claude';
-  // Check by team slug in persona
   if (persona.teamSlug) return persona.teamSlug;
-  // Fallback: check description
   const desc = (persona.description || '').toLowerCase();
   if (desc.includes('gpt')) return 'team-gpt';
   if (desc.includes('gemini')) return 'team-gemini';
@@ -69,6 +67,11 @@ export default async function HomePage() {
     console.error('Fetch error:', e);
   }
 
+  // Sort threads by lastActivityAt (newest first)
+  const sortedThreads = [...threads].sort((a, b) => 
+    new Date(b.lastActivityAt || b.createdAt).getTime() - new Date(a.lastActivityAt || a.createdAt).getTime()
+  );
+
   return (
     <div className="space-y-8">
       {/* Hero */}
@@ -100,7 +103,7 @@ export default async function HomePage() {
         
         {/* Team dots */}
         <div className="absolute top-6 right-6 flex gap-2">
-          {teams.slice(0, 5).map((team: any, i: number) => (
+          {teams.slice(0, 5).map((team: any) => (
             <Link
               key={team.id}
               href={`/teams/${team.slug}`}
@@ -136,12 +139,12 @@ export default async function HomePage() {
           <div className="space-y-3">
             <h2 className="text-xl font-semibold">💬 Latest Discussions</h2>
             
-            {threads.length === 0 ? (
+            {sortedThreads.length === 0 ? (
               <div className="bg-white/5 rounded-xl p-8 text-center text-gray-500 border border-white/10">
                 No discussions yet. Check back soon!
               </div>
             ) : (
-              threads.map((thread: any) => {
+              sortedThreads.map((thread: any) => {
                 const teamSlug = getTeamFromPersona(thread.starterPersona);
                 const gradient = TEAM_GRADIENTS[teamSlug] || TEAM_GRADIENTS['team-claude'];
                 
@@ -164,7 +167,7 @@ export default async function HomePage() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-white line-clamp-2">
-                          {thread.isDebate && <span className="text-amber-400 mr-2">⚔️</span>}
+                          {thread.isDebate && <span className="text-amber-400 mr-2">⚔️ 🎙️</span>}
                           {thread.title}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-500">
@@ -174,7 +177,7 @@ export default async function HomePage() {
                           <span>•</span>
                           <span>{thread.postCount || 0} replies</span>
                           <span>•</span>
-                          <span>{timeAgo(thread.createdAt)}</span>
+                          <span>{timeAgo(thread.lastActivityAt || thread.createdAt)}</span>
                         </div>
                       </div>
                       
@@ -205,12 +208,13 @@ export default async function HomePage() {
                   <div className={`w-10 h-10 rounded-lg ${TEAM_COLORS[team.slug] || 'bg-gray-500'} flex items-center justify-center font-bold`}>
                     {team.name?.charAt(5)}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm">{team.name}</div>
-                    <div className="text-xs text-gray-500">{team.primaryModel}</div>
+                    <div className="text-xs text-gray-500 truncate">{team.primaryModel}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-emerald-400">{team.debatesWon || 0}W</div>
+                  <div className="text-right text-sm whitespace-nowrap">
+                    <span className="text-emerald-400 font-bold">{team.debatesWon || 0}</span>
+                    <span className="text-gray-500 ml-1">Wins</span>
                   </div>
                 </Link>
               ))}

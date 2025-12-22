@@ -68,37 +68,40 @@ export default async function LeaderboardPage() {
         <div className="grid md:grid-cols-3 gap-4">
           {sortedPersonas.slice(0, 3).map((persona: any, i: number) => {
             const team = getTeamFromPersona(persona, teams);
-            const style = team ? TEAM_STYLES[team.slug] : TEAM_STYLES['team-claude'];
+            const style = team ? TEAM_STYLES[team.slug] : { gradient: 'from-gray-500 to-gray-600', bg: 'bg-gray-500' };
             const medals = ['🥇', '🥈', '🥉'];
-            const heights = ['h-52', 'h-48', 'h-44'];
             
             return (
               <Link
                 key={persona.id}
                 href={`/personas/${persona.slug}`}
-                className={`bg-white/5 border border-white/10 rounded-xl ${heights[i]} relative overflow-hidden group 
-                  ${i === 0 ? 'md:order-2' : i === 1 ? 'md:order-1' : 'md:order-3'}`}
+                className={`bg-white/5 border border-white/10 rounded-xl relative overflow-hidden group 
+                  ${i === 0 ? 'md:order-2 min-h-[280px]' : i === 1 ? 'md:order-1 min-h-[250px]' : 'md:order-3 min-h-[220px]'}`}
               >
                 {/* Gradient background */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${style?.gradient || 'from-gray-500 to-gray-600'} opacity-20 group-hover:opacity-30 transition`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-20 group-hover:opacity-30 transition`} />
                 
                 <div className="relative h-full flex flex-col items-center justify-center p-6">
-                  <span className="text-5xl mb-3">{medals[i]}</span>
-                  <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${style?.gradient || 'from-gray-500 to-gray-600'} p-0.5`}>
+                  <span className="text-4xl mb-2">{medals[i]}</span>
+                  <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${style.gradient} p-0.5`}>
                     <img 
                       src={persona.avatarUrl}
                       alt={persona.name}
                       className="w-full h-full rounded-full bg-[#0a0f1a] object-cover"
                     />
                   </div>
-                  <h3 className="font-bold mt-3 text-lg">{persona.name}</h3>
-                  {team && (
-                    <div className={`text-sm ${style?.bg || 'bg-gray-500'} px-3 py-1 rounded-full mt-2`}>
-                      {team.name}
-                    </div>
-                  )}
-                  <div className="text-3xl font-bold mt-3">{persona.eloRating || 1200}</div>
+                  <h3 className="font-bold mt-2 text-base">{persona.name}</h3>
+                  <div className={`text-xs ${style.bg} px-2 py-0.5 rounded-full mt-1`}>
+                    {team?.name || 'Independent'}
+                  </div>
+                  <div className="text-2xl font-bold mt-2">{persona.eloRating || 1200}</div>
                   <div className="text-xs text-gray-500">ELO Rating</div>
+                  <div className="text-xs mt-1">
+                    <span className="text-emerald-400">{persona.debatesWon || 0}</span>
+                    <span className="text-gray-500"> Wins / </span>
+                    <span className="text-red-400">{persona.debatesLost || 0}</span>
+                    <span className="text-gray-500"> Losses</span>
+                  </div>
                 </div>
               </Link>
             );
@@ -166,7 +169,7 @@ export default async function LeaderboardPage() {
           
           {sortedPersonas.map((persona: any, i: number) => {
             const team = getTeamFromPersona(persona, teams);
-            const style = team ? TEAM_STYLES[team.slug] : TEAM_STYLES['team-claude'];
+            const style = team ? TEAM_STYLES[team.slug] : { gradient: 'from-gray-500 to-gray-600', bg: 'bg-gray-500' };
             
             return (
               <Link
@@ -178,7 +181,7 @@ export default async function LeaderboardPage() {
                   {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
                 </div>
                 <div className="col-span-5 flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${style?.gradient || 'from-gray-500 to-gray-600'} p-0.5`}>
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${style.gradient} p-0.5`}>
                     <img 
                       src={persona.avatarUrl}
                       alt=""
@@ -187,7 +190,7 @@ export default async function LeaderboardPage() {
                   </div>
                   <div>
                     <div className="font-medium">{persona.name}</div>
-                    <div className="text-xs text-gray-500">{team?.name || 'Unknown'}</div>
+                    <div className="text-xs text-gray-500">{team?.name || 'Independent'}</div>
                   </div>
                 </div>
                 <div className="col-span-2 text-center font-bold">{persona.eloRating || 1200}</div>
