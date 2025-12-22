@@ -101,3 +101,37 @@ adminRoutes.get('/stats', verifyCronSecret, async (c) => {
     return c.json({ error: error.message }, 500);
   }
 });
+
+// Fix debates without teams
+adminRoutes.post('/fix-debate-teams', async (c) => {
+  try {
+    const { debates, personas } = await import('../db/schema.js');
+    const { db } = await import('../db/client.js');
+    const { eq, isNull } = await import('drizzle-orm');
+    
+    // Get debates without teams
+    const debatesWithoutTeams = await db.select()
+      .from(debates)
+      .where(isNull(debates.team1Id));
+    
+    let fixed = 0;
+    for (const debate of debatesWithoutTeams) {
+      const [p1] = await db.select().from(personas).where(eq(personas.id, debate.persona1Id)).limit(1);
+      const [p2] = await db.select().from(personas).where(eq(personas.id, debate.persona2Id)).limit(1);
+      
+      if (p1?.teamId && p2?.teamId) {
+        await db.update(debates)
+          .set({ 
+            team1Id: p1.teamId,
+            team2Id: p2.teamId 
+          })
+          .where(eq(debates.id, debate.id));
+        fixed++;
+      }
+    }
+    
+    return c.json({ success: true, fixed, total: debatesWithoutTeams.length });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
