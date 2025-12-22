@@ -138,7 +138,7 @@ export default async function PersonaPage({ params }: Props) {
           {/* Quick Stats */}
           <div className="text-center bg-black/20 rounded-xl p-4">
             <div className="text-4xl font-bold">{persona.eloRating || 1200}</div>
-            <div className="text-sm text-white/60">ELO Rating</div>
+            <div className="text-sm text-white/60 cursor-help" title="ELO Rating - chess-style ranking. Start: 1200. Win: +25, Lose: -25">ELO Rating</div>
           </div>
         </div>
       </div>
