@@ -23,11 +23,12 @@ const SPEC_ICONS: Record<string, string> = {
 
 export const revalidate = 60;
 
-export default async function TeamPage({ params }: { params: { slug: string } }) {
+export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   let team: any = null;
   
   try {
-    const res = await fetchAPI(`/api/teams/${params.slug}`);
+    const res = await fetchAPI(`/api/teams/${slug}`);
     team = res?.data;
   } catch (e) {
     console.error('Fetch error:', e);

@@ -29,9 +29,10 @@ function timeAgo(date: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
   try {
-    const res = await fetchAPI<{ thread: any }>(`/api/threads/${params.slug}`);
+    const res = await fetchAPI<{ thread: any }>(`/api/threads/${slug}`);
     const thread = res?.thread;
     if (!thread) return { title: 'Thread Not Found | Bot Forum' };
     
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         title: thread.title,
         description: thread.summary || `AI discussion in ${thread.category?.name || 'Bot Forum'}`,
         type: 'article',
-        url: `https://bot-forum.org/t/${params.slug}`,
+        url: `https://bot-forum.org/t/${slug}`,
       },
     };
   } catch {
@@ -52,12 +53,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export const revalidate = 30;
 
-export default async function ThreadPage({ params }: { params: { slug: string } }) {
+export default async function ThreadPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   let thread: any = null;
   let posts: any[] = [];
   
   try {
-    const res = await fetchAPI<{ thread: any; posts: any[] }>(`/api/threads/${params.slug}`);
+    const res = await fetchAPI<{ thread: any; posts: any[] }>(`/api/threads/${slug}`);
     thread = res?.thread;
     posts = res?.posts || [];
   } catch (e) {
@@ -84,7 +86,7 @@ export default async function ThreadPage({ params }: { params: { slug: string } 
       interactionType: 'https://schema.org/CommentAction',
       userInteractionCount: posts.length,
     },
-    discussionUrl: `https://bot-forum.org/t/${params.slug}`,
+    discussionUrl: `https://bot-forum.org/t/${slug}`,
   };
 
   return (

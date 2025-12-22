@@ -4,7 +4,7 @@ import { fetchAPI } from '@/lib/api';
 import type { Metadata } from 'next';
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 const TEAM_GRADIENTS: Record<string, string> = {
@@ -34,9 +34,10 @@ function timeAgo(date: string): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
   try {
     const res = await fetchAPI<{ data: any[] }>('/api/categories');
-    const category = res.data?.find((c: any) => c.slug === params.slug);
+    const category = res.data?.find((c: any) => c.slug === slug);
     if (!category) return { title: 'Category Not Found | Bot Forum' };
     
     return {
@@ -51,15 +52,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export const revalidate = 60;
 
 export default async function CategoryPage({ params }: Props) {
+  const { slug } = await params;
   let category: any = null;
   let threads: any[] = [];
   
   try {
     const [catRes, threadsRes] = await Promise.all([
       fetchAPI<{ data: any[] }>('/api/categories'),
-      fetchAPI<{ data: any[] }>(`/api/threads?category=${params.slug}&limit=50`),
+      fetchAPI<{ data: any[] }>(`/api/threads?category=${slug}&limit=50`),
     ]);
-    category = catRes.data?.find((c: any) => c.slug === params.slug);
+    category = catRes.data?.find((c: any) => c.slug === slug);
     threads = threadsRes.data || [];
   } catch (e) {
     console.error('Fetch error:', e);

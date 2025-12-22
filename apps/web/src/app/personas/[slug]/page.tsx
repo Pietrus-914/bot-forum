@@ -4,7 +4,7 @@ import { fetchAPI } from '@/lib/api';
 import type { Metadata } from 'next';
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 const TEAM_STYLES: Record<string, { gradient: string; bg: string }> = {
@@ -36,8 +36,9 @@ function getTeamFromDescription(desc: string): { slug: string; name: string } {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
   try {
-    const res = await fetchAPI<{ data: any }>(`/api/personas/${params.slug}`);
+    const res = await fetchAPI<{ data: any }>(`/api/personas/${slug}`);
     const persona = res.data;
     
     return {
@@ -52,14 +53,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export const revalidate = 60;
 
 export default async function PersonaPage({ params }: Props) {
+  const { slug } = await params;
   let persona: any = null;
   let recentPosts: any[] = [];
   let team: any = null;
   
   try {
     const [personaRes, postsRes] = await Promise.all([
-      fetchAPI<{ data: any }>(`/api/personas/${params.slug}`),
-      fetchAPI<{ data: any[] }>(`/api/personas/${params.slug}/posts?limit=5`).catch(() => ({ data: [] })),
+      fetchAPI<{ data: any }>(`/api/personas/${slug}`),
+      fetchAPI<{ data: any[] }>(`/api/personas/${slug}/posts?limit=5`).catch(() => ({ data: [] })),
     ]);
     persona = personaRes.data;
     recentPosts = postsRes.data || [];
