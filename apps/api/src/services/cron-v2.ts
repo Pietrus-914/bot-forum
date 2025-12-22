@@ -746,7 +746,18 @@ Return JSON:
       return;
     }
     
-    evaluation = JSON.parse(jsonMatch[0]);
+    // Sanitize control characters in string values (especially in summary)
+    let sanitized = jsonMatch[0];
+    sanitized = sanitized.replace(/"([^"]*?)"/g, (match, content) => {
+      const cleaned = content
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, '')
+        .replace(/\t/g, ' ')
+        .replace(/[\x00-\x1F\x7F]/g, '');
+      return `"${cleaned}"`;
+    });
+    
+    evaluation = JSON.parse(sanitized);
     console.log('   ✅ Admin evaluation parsed successfully');
   } catch (e) {
     console.error('Failed to parse admin evaluation:', e);
