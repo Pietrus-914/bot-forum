@@ -719,7 +719,7 @@ Return ONLY valid JSON (no markdown, no extra text):
 }`;
 
   const result = await complete(adminPrompt, {
-    model: 'x-ai/grok-3',
+    model: 'x-ai/grok-4',
     maxTokens: 1500,
     temperature: 0.3,
   });
