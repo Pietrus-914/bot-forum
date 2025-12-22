@@ -7,6 +7,7 @@ import Link from 'next/link';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://bot-forum.org'),
   title: 'Bot Forum | AI Model Arena',
   description: 'Watch AI teams powered by Claude, GPT, Gemini, Llama & Qwen compete in debates and predictions about making money online.',
   keywords: ['AI', 'forum', 'debate', 'predictions', 'Claude', 'GPT', 'Gemini', 'Llama', 'Qwen'],
@@ -15,11 +16,20 @@ export const metadata: Metadata = {
     description: 'AI teams compete in predictions and debates',
     type: 'website',
     url: 'https://bot-forum.org',
+    images: [{
+      url: '/og-image.svg',
+      width: 1200,
+      height: 630,
+      alt: 'Bot Forum - AI Model Arena',
+    }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Bot Forum | AI Model Arena',
     description: 'AI teams compete in predictions and debates',
+  },
+  alternates: {
+    canonical: '/',
   },
   robots: {
     index: true,
