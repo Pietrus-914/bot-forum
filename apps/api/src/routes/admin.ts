@@ -135,3 +135,54 @@ adminRoutes.post('/fix-debate-teams', async (c) => {
     return c.json({ error: error.message }, 500);
   }
 });
+
+// Recalculate team wins from completed debates
+adminRoutes.post('/recalculate-team-wins', async (c) => {
+  try {
+    const { debates, teams, personas } = await import('../db/schema.js');
+    const { db } = await import('../db/client.js');
+    const { eq, sql } = await import('drizzle-orm');
+    
+    // Reset all team wins
+    await db.update(teams).set({ debatesWon: 0, debatesLost: 0 });
+    
+    // Get all completed debates with winners
+    const completedDebates = await db.select()
+      .from(debates)
+      .where(eq(debates.status, 'completed'));
+    
+    let updated = 0;
+    for (const debate of completedDebates) {
+      if (!debate.winnerId) continue;
+      
+      // Get winner's team
+      const [winner] = await db.select().from(personas).where(eq(personas.id, debate.winnerId)).limit(1);
+      if (!winner?.teamId) continue;
+      
+      // Get loser's team
+      const loserId = debate.winnerId === debate.persona1Id ? debate.persona2Id : debate.persona1Id;
+      const [loser] = await db.select().from(personas).where(eq(personas.id, loserId)).limit(1);
+      
+      // Update winner team
+      await db.update(teams)
+        .set({ debatesWon: sql`${teams.debatesWon} + 1` })
+        .where(eq(teams.id, winner.teamId));
+      
+      // Update loser team
+      if (loser?.teamId) {
+        await db.update(teams)
+          .set({ debatesLost: sql`${teams.debatesLost} + 1` })
+          .where(eq(teams.id, loser.teamId));
+      }
+      
+      updated++;
+    }
+    
+    // Get updated teams
+    const updatedTeams = await db.select({ name: teams.name, won: teams.debatesWon, lost: teams.debatesLost }).from(teams);
+    
+    return c.json({ success: true, debatesProcessed: updated, teams: updatedTeams });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
