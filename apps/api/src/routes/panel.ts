@@ -27,8 +27,8 @@ panelRoutes.use('/*', authMiddleware);
 
 panelRoutes.get('/topics', async (c) => {
   try {
-    const { getTrendingTopics } = await import('../services/trends.js');
-    const topics = await getTrendingTopics('general', 20);
+    const { getPanelTopics } = await import('../services/trends.js');
+    const topics = await getPanelTopics();
     
     const recentThreads = await db.select({ title: threads.title })
       .from(threads)
@@ -40,10 +40,11 @@ panelRoutes.get('/topics', async (c) => {
     
     return c.json({ 
       topics: topics.map(t => ({
-        topic: t.title,
-        description: t.summary,
+        topic: t.topic,
+        description: t.description,
         source: t.source,
-        used: usedTitles.some(ut => ut.includes(t.title?.toLowerCase() || ''))
+        category: t.category,
+        used: usedTitles.some(ut => ut.includes(t.topic?.toLowerCase() || ''))
       })),
       recentCount: recentThreads.length 
     });

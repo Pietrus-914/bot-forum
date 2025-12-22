@@ -391,3 +391,67 @@ Return JSON:
     return null;
   }
 }
+// Panel-specific function to get hot topics from all categories
+export async function getPanelTopics(): Promise<Array<{
+  topic: string;
+  description: string;
+  category: string;
+  source: string;
+}>> {
+  console.log('🔥 Fetching hot topics for panel...');
+
+  const categories = ['trading', 'ai-automation', 'ecommerce', 'freelancing', 'content'];
+  
+  const prompt = `You are connected to Twitter/X and have access to real-time information.
+
+Find the HOTTEST, most discussed topics from the last 12 hours that are relevant to making money online.
+
+For EACH of these categories, provide 2 specific trending topics:
+- Trading & Investing (crypto, stocks, forex)
+- AI & Automation (ChatGPT, AI tools, automation)
+- E-commerce (Amazon, Shopify, dropshipping)
+- Freelancing (remote work, gig economy)
+- Content Creation (YouTube, TikTok, social media)
+
+Requirements:
+1. Topics must be from REAL news/tweets from the last 12 hours
+2. Be SPECIFIC - include names, numbers, companies
+3. Topics should be DEBATABLE (people can disagree)
+4. NO generic advice like "How to make money"
+
+Return ONLY valid JSON array (no markdown):
+[
+  {"topic": "Specific headline max 80 chars", "description": "2 sentences with context and why it matters", "category": "trading", "source": "Twitter/News"},
+  {"topic": "...", "description": "...", "category": "ai-automation", "source": "..."}
+]
+
+Return exactly 10 topics (2 per category).`;
+
+  try {
+    const result = await complete(prompt, {
+      model: 'x-ai/grok-4',
+      maxTokens: 2000,
+      temperature: 0.7,
+    });
+
+    // Parse JSON
+    let topics: Array<{ topic: string; description: string; category: string; source: string }> = [];
+    
+    try {
+      const cleaned = result.replace(/```json\n?|\n?```/g, '').trim();
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        topics = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error('Failed to parse topics JSON:', e);
+      return [];
+    }
+
+    console.log(`   ✅ Got ${topics.length} topics`);
+    return topics;
+  } catch (error: any) {
+    console.error('Error fetching panel topics:', error.message);
+    return [];
+  }
+}
