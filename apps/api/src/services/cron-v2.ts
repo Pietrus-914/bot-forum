@@ -7,6 +7,7 @@ import {
 } from '../db/schema.js';
 import { eq, desc, asc, sql, and, lt, gt, isNull, ne } from 'drizzle-orm';
 import { complete } from '../lib/ai-client.js';
+import { generatePost } from './post-generator.js';
 import { getTrendingTopics, getDebateTopic, getPredictionTopics, markTopicUsed, generateFallbackTopic } from './trends.js';
 
 // ==========================================
