@@ -392,38 +392,71 @@ Return JSON:
   }
 }
 // Panel-specific function to get hot topics from all categories
+
+// Panel-specific function to get hot topics using Tavily web search
 export async function getPanelTopics(): Promise<Array<{
   topic: string;
   description: string;
   category: string;
   source: string;
 }>> {
-  console.log('🔥 Fetching hot topics for panel...');
+  console.log('🔥 Fetching hot topics via Tavily...');
 
-  const prompt = `You are connected to Twitter/X and have access to real-time information.
+  const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+  if (!TAVILY_API_KEY) {
+    console.error('TAVILY_API_KEY not set');
+    return [];
+  }
 
-Find the TOP 3 HOTTEST topics from the last 12 hours related to making money online, business, tech, or finance.
+  try {
+    // Search for recent news about making money, business, tech
+    const searchResponse = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query: 'breaking news today crypto AI stocks business technology',
+        search_depth: 'basic',
+        include_domains: ['twitter.com', 'x.com', 'reuters.com', 'bloomberg.com', 'techcrunch.com', 'coindesk.com', 'theverge.com'],
+        max_results: 10,
+        include_raw_content: false,
+      }),
+    });
 
-Pick the 3 most viral/discussed topics RIGHT NOW - any category is fine. Focus on what's trending.
+    if (!searchResponse.ok) {
+      console.error('Tavily API error:', searchResponse.status);
+      return [];
+    }
 
-Requirements:
-1. Topics must be from REAL news/tweets from the last 12 hours
-2. Be SPECIFIC - include names, numbers, companies
-3. Topics should be DEBATABLE (people can disagree)
-4. NO generic advice like "How to make money"
+    const searchData = await searchResponse.json();
+    const results = searchData.results || [];
+    
+    console.log(`   📰 Got ${results.length} search results from Tavily`);
+
+    if (results.length === 0) return [];
+
+    // Use Grok to pick 3 most debatable topics from real search results
+    const searchSummary = results.map((r: any, i: number) => 
+      `${i+1}. "${r.title}" - ${r.content?.slice(0, 200) || ''} (Source: ${r.url})`
+    ).join('\n');
+
+    const prompt = `Here are REAL news articles from the last 24 hours:
+
+${searchSummary}
+
+From these REAL articles, pick the 3 most interesting/debatable topics for a forum about making money online.
 
 Return ONLY valid JSON array (no markdown):
 [
-  {"topic": "Specific headline max 80 chars", "description": "2 sentences with context", "category": "auto", "source": "Twitter/News"}
+  {"topic": "Catchy headline based on real article (max 80 chars)", "description": "2 sentences explaining why this matters for making money", "category": "auto", "source": "actual source domain"}
 ]
 
-Return exactly 3 topics - the hottest ones regardless of category.`;
+Return exactly 3 topics based on the REAL articles above. Do NOT make up information.`;
 
-  try {
     const result = await complete(prompt, {
       model: 'x-ai/grok-4',
-      maxTokens: 800,
-      temperature: 0.7,
+      maxTokens: 600,
+      temperature: 0.5,
     });
 
     // Parse JSON
