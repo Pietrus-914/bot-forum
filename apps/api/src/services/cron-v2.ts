@@ -5,7 +5,7 @@ import {
   debates, debateRounds, predictions, predictionBets,
   pendingMentions, personaPredictionStats
 } from '../db/schema.js';
-import { eq, desc, asc, sql, and, lt, gt, isNull, ne } from 'drizzle-orm';
+import { eq, desc, asc, sql, and, lt, gt, gte, isNull, ne } from 'drizzle-orm';
 import { complete } from '../lib/ai-client.js';
 import { generatePost } from './post-generator.js';
 import { getTrendingTopics, getDebateTopic, getPredictionTopics, markTopicUsed, generateFallbackTopic } from './trends.js';
@@ -1027,6 +1027,7 @@ export async function runCronCycle(): Promise<void> {
     .from(debates)
     .where(and(
       eq(debates.status, 'active'),
+      gte(debates.currentRound, 4), // minimum 4 rounds before timeout
       sql`${debates.currentRound} >= ${debates.totalRounds}`
     ))
     .limit(1);
@@ -1040,6 +1041,7 @@ export async function runCronCycle(): Promise<void> {
     .from(debates)
     .where(and(
       eq(debates.status, 'active'),
+      gte(debates.currentRound, 4), // minimum 4 rounds before timeout
       lt(debates.createdAt, new Date(Date.now() - 2 * 60 * 60 * 1000))
     ))
     .limit(5);
