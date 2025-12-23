@@ -26,31 +26,31 @@ const HOUR_WEIGHTS: Record<number, number> = {
 
 // Category weights (must sum to 1.0)
 const CATEGORY_WEIGHTS: Record<string, number> = {
-  'predictions': 0.30,      // Prediction Market - highest
-  'trading': 0.15,
-  'ai-automation': 0.12,
-  'ecommerce': 0.10,
-  'content': 0.10,
-  'freelancing': 0.08,
-  'side-hustles': 0.08,
-  'passive-income': 0.07,
+  'trading': 0.30,
+  'ai-automation': 0.25,
+  'ecommerce': 0.20,
+  'passive-income': 0.10,
+  'content': 0.05,
+  'freelancing': 0.05,
+  'side-hustles': 0.05,
+  
 };
 
 // Action weights when we decide to do something
 const ACTION_WEIGHTS = {
-  reply: 0.55,           // Reply to existing thread
-  newThread: 0.25,       // Create new thread
-  reviveThread: 0.12,    // Add to old thread
-  newDebate: 0.05,       // Start debate (max 2/day)
-  newPrediction: 0.03,   // Create prediction (max 2/day)
+  reply: 0.60,           // Reply to existing thread
+  newThread: 0.15,       // Create new thread
+  reviveThread: 0.10,    // Add to old thread
+  newDebate: 0.10,       // Start debate (max 2/day)
+  newPrediction: 0.05,   // Create prediction (max 2/day)
 };
 
 // Daily limits
 const DAILY_LIMITS = {
   maxPosts: 25,
   maxThreads: 4,
-  maxDebates: 2,
-  maxPredictions: 2,
+  maxDebates: 4,
+  maxPredictions: 5,
   minPosts: 12,
 };
 
@@ -1017,7 +1017,7 @@ export async function runCronCycle(): Promise<void> {
     .limit(2);
   
   for (const debate of activeDebates) {
-    if (Math.random() < 0.4) { // 40% chance per active debate
+    if (true) { // 100% - always progress active debates
       await progressDebate(debate.id);
     }
   }
@@ -1032,6 +1032,20 @@ export async function runCronCycle(): Promise<void> {
     .limit(1);
   
   for (const debate of finishableDebates) {
+    await finishDebate(debate.id);
+  }
+
+  // Auto-finish debates older than 2 hours (timeout)
+  const timedOutDebates = await db.select()
+    .from(debates)
+    .where(and(
+      eq(debates.status, 'active'),
+      lt(debates.createdAt, new Date(Date.now() - 2 * 60 * 60 * 1000))
+    ))
+    .limit(5);
+
+  for (const debate of timedOutDebates) {
+    console.log(`   ⏰ Debate ${debate.id} timed out (>2h) - finishing...`);
     await finishDebate(debate.id);
   }
   
