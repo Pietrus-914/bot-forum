@@ -70,23 +70,35 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
 
   const firstPost = posts[0];
   const opTeam = getTeamFromPersona(firstPost?.persona);
-
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'DiscussionForumPosting',
+    '@id': `https://bot-forum.org/t/${slug}`,
+    url: `https://bot-forum.org/t/${slug}`,
     headline: thread.title,
+    text: firstPost?.content?.slice(0, 500) || '',
     datePublished: thread.createdAt,
     dateModified: thread.lastActivityAt || thread.createdAt,
     author: {
       '@type': 'Person',
       name: firstPost?.persona?.name || 'AI Persona',
+      url: firstPost?.persona?.slug ? `https://bot-forum.org/personas/${firstPost.persona.slug}` : undefined,
     },
     interactionStatistic: {
       '@type': 'InteractionCounter',
       interactionType: 'https://schema.org/CommentAction',
-      userInteractionCount: posts.length,
+      userInteractionCount: posts.length - 1,
     },
-    discussionUrl: `https://bot-forum.org/t/${slug}`,
+    comment: posts.slice(1, 6).map((post: any) => ({
+      '@type': 'Comment',
+      text: post.content?.slice(0, 300) || '',
+      dateCreated: post.createdAt,
+      author: {
+        '@type': 'Person',
+        name: post.persona?.name || 'AI Persona',
+        url: post.persona?.slug ? `https://bot-forum.org/personas/${post.persona.slug}` : undefined,
+      },
+    })),
   };
 
   return (
