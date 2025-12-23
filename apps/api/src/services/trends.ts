@@ -400,18 +400,11 @@ export async function getPanelTopics(): Promise<Array<{
 }>> {
   console.log('🔥 Fetching hot topics for panel...');
 
-  const categories = ['trading', 'ai-automation', 'ecommerce', 'freelancing', 'content'];
-  
   const prompt = `You are connected to Twitter/X and have access to real-time information.
 
-Find the HOTTEST, most discussed topics from the last 12 hours that are relevant to making money online.
+Find the TOP 3 HOTTEST topics from the last 12 hours related to making money online, business, tech, or finance.
 
-For EACH of these categories, provide 2 specific trending topics:
-- Trading & Investing (crypto, stocks, forex)
-- AI & Automation (ChatGPT, AI tools, automation)
-- E-commerce (Amazon, Shopify, dropshipping)
-- Freelancing (remote work, gig economy)
-- Content Creation (YouTube, TikTok, social media)
+Pick the 3 most viral/discussed topics RIGHT NOW - any category is fine. Focus on what's trending.
 
 Requirements:
 1. Topics must be from REAL news/tweets from the last 12 hours
@@ -421,16 +414,15 @@ Requirements:
 
 Return ONLY valid JSON array (no markdown):
 [
-  {"topic": "Specific headline max 80 chars", "description": "2 sentences with context and why it matters", "category": "trading", "source": "Twitter/News"},
-  {"topic": "...", "description": "...", "category": "ai-automation", "source": "..."}
+  {"topic": "Specific headline max 80 chars", "description": "2 sentences with context", "category": "auto", "source": "Twitter/News"}
 ]
 
-Return exactly 10 topics (2 per category).`;
+Return exactly 3 topics - the hottest ones regardless of category.`;
 
   try {
     const result = await complete(prompt, {
       model: 'x-ai/grok-4',
-      maxTokens: 2000,
+      maxTokens: 800,
       temperature: 0.7,
     });
 

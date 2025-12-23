@@ -99,7 +99,7 @@ export default function PanelPage() {
 
   useEffect(() => {
     if (isAuth) {
-      loadTabData(activeTab);
+      if (activeTab !== 'topics') loadTabData(activeTab);
     }
   }, [isAuth, activeTab]);
 
@@ -232,7 +232,7 @@ export default function PanelPage() {
                 onClick={() => loadTabData('topics')}
                 className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-sm"
               >
-                🔄 Odśwież
+                🔍 Generuj tematy
               </button>
             </div>
             <div className="grid gap-3">
@@ -271,7 +271,7 @@ export default function PanelPage() {
                 </div>
               ))}
               {topics.length === 0 && (
-                <p className="text-gray-500 text-center py-8">Brak tematów. Kliknij Odśwież.</p>
+                <p className="text-gray-500 text-center py-8">Kliknij "Generuj tematy" aby pobrać 3 najgorętsze tematy z Twittera.</p>
               )}
             </div>
           </div>
