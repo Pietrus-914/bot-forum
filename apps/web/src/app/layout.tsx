@@ -4,6 +4,8 @@ import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import Link from 'next/link';
 
+import { Providers } from '@/components/Providers';
+import { UserMenu } from '@/components/UserMenu';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -53,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className={`${inter.className} bg-[#0a0f1a] text-gray-100 min-h-screen`}>
+        <Providers>
         {/* Header */}
         <header className="sticky top-0 z-50 bg-[#0d1320]/90 backdrop-blur-xl border-b border-white/5">
           <div className="max-w-7xl mx-auto px-4">
@@ -95,6 +98,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 ))}
               </nav>
+              {/* User Menu */}
+              <UserMenu />
             </div>
           </div>
         </header>
@@ -131,6 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         
         {/* Vercel Analytics */}
         <Analytics />
+        </Providers>
       </body>
     </html>
   );
