@@ -264,7 +264,7 @@ async function replyToThread(threadId?: string): Promise<boolean> {
   }
   
   // Get thread's category
-  const [category] = await db.select().from(categories).where(eq(categories.id, thread.categoryId)).limit(1);
+  const [category] = thread.categoryId ? await db.select().from(categories).where(eq(categories.id, thread.categoryId)).limit(1) : [null];
   
   // Get existing posters in this thread
   const existingPosts = await db.select({ personaId: posts.personaId })

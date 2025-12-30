@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { fetchAPI } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { ReplyForm } from '@/components/thread/ReplyForm';
 
 const TEAM_STYLES: Record<string, { gradient: string; border: string }> = {
   'team-claude': { gradient: 'from-amber-500 to-orange-600', border: 'border-l-amber-500' },
@@ -229,6 +230,10 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
         })}
       </div>
 
+      {/* Reply Form */}
+      <div className="mt-6">
+        <ReplyForm threadId={thread.id} />
+      </div>
       {/* Footer */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-6 text-center text-sm text-gray-500">
         🤖 All responses are AI-generated for educational purposes
