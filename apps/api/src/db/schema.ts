@@ -508,3 +508,115 @@ export const predictionVerifications = pgTable('prediction_verifications', {
   outcome: varchar('outcome', { length: 20 }).notNull(), // 'correct', 'incorrect', 'partial'
   adminNotes: text('admin_notes'),
 });
+
+// ==========================================
+// USER SYSTEM
+// ==========================================
+
+// Users (Google OAuth)
+export const users = pgTable('users', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 100 }),
+  avatar: text('avatar'), // URL to avatar image
+  bio: text('bio'),
+  googleId: varchar('google_id', { length: 255 }).unique(),
+  
+  // Status
+  isAdmin: boolean('is_admin').default(false),
+  isBanned: boolean('is_banned').default(false),
+  banReason: text('ban_reason'),
+  
+  // Rate limiting
+  lastPostAt: timestamp('last_post_at'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// User AI Personas (user-created AI personas with their own API keys)
+export const userPersonas = pgTable('user_personas', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Persona info
+  name: varchar('name', { length: 50 }).notNull(),
+  slug: varchar('slug', { length: 60 }).notNull().unique(),
+  avatar: text('avatar'),
+  bio: text('bio'),
+  systemPrompt: text('system_prompt'), // Custom prompt for the AI
+  
+  // AI Configuration
+  apiKey: text('api_key_encrypted'), // Encrypted API key
+  apiProvider: varchar('api_provider', { length: 50 }), // 'openai', 'anthropic', 'openrouter'
+  modelId: varchar('model_id', { length: 100 }), // e.g., 'gpt-4', 'claude-3-opus'
+  
+  // Behavior settings
+  isActive: boolean('is_active').default(false), // Whether the AI responds automatically
+  responseFrequency: integer('response_frequency').default(60), // Minutes between responses (15-1440)
+  responseMode: varchar('response_mode', { length: 20 }).default('random'), // 'random' or 'topics'
+  topicFilters: text('topic_filters'), // JSON array of category slugs if mode is 'topics'
+  
+  // Stats
+  postCount: integer('post_count').default(0),
+  lastActiveAt: timestamp('last_active_at'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// User posts (posts made by human users, not AI)
+export const userPosts = pgTable('user_posts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  threadId: uuid('thread_id').notNull().references(() => threads.id, { onDelete: 'cascade' }),
+  
+  content: text('content').notNull(),
+  
+  // For replies
+  replyToPostId: uuid('reply_to_post_id'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// User-created threads
+export const userThreads = pgTable('user_threads', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  threadId: uuid('thread_id').notNull().references(() => threads.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Pending mentions for user personas (to track @mentions that need responses)
+export const userMentions = pgTable('user_mentions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  postId: uuid('post_id').notNull(), // Can be from posts or userPosts
+  mentionedPersonaId: uuid('mentioned_persona_id').references(() => userPersonas.id, { onDelete: 'cascade' }),
+  mentionedByUserId: uuid('mentioned_by_user_id').references(() => users.id),
+  mentionedByPersonaId: uuid('mentioned_by_persona_id').references(() => personas.id),
+  
+  threadId: uuid('thread_id').notNull().references(() => threads.id),
+  
+  isProcessed: boolean('is_processed').default(false),
+  processedAt: timestamp('processed_at'),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  personas: many(userPersonas),
+  posts: many(userPosts),
+  threads: many(userThreads),
+}));
+
+export const userPersonasRelations = relations(userPersonas, ({ one, many }) => ({
+  user: one(users, { fields: [userPersonas.userId], references: [users.id] }),
+  mentions: many(userMentions),
+}));
+
+export const userPostsRelations = relations(userPosts, ({ one }) => ({
+  user: one(users, { fields: [userPosts.userId], references: [users.id] }),
+  thread: one(threads, { fields: [userPosts.threadId], references: [threads.id] }),
+}));
