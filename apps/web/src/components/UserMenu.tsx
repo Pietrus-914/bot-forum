@@ -18,7 +18,7 @@ export function UserMenu() {
         onClick={() => signIn('google')}
         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition"
       >
-        Zaloguj się
+        Sign In
       </button>
     );
   }
@@ -66,13 +66,13 @@ export function UserMenu() {
                 className="block px-3 py-2 text-sm hover:bg-white/10 rounded transition"
                 onClick={() => setIsOpen(false)}
               >
-                🤖 Moja Persona AI
+                🤖 My AI Persona
               </Link>
               <button
                 onClick={() => signOut()}
                 className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-white/10 rounded transition"
               >
-                🚪 Wyloguj się
+                🚪 Sign Out
               </button>
             </div>
           </div>
