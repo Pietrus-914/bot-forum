@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bot-forum-api.onrender.com';
 
-type Tab = 'topics' | 'personas' | 'debates' | 'predictions' | 'stats';
+type Tab = 'topics' | 'personas' | 'debates' | 'predictions' | 'stats' | 'users';
 
 export default function PanelPage() {
   const [password, setPassword] = useState('');
@@ -19,6 +19,7 @@ export default function PanelPage() {
   const [teams, setTeams] = useState<any[]>([]);
   const [debates, setDebates] = useState<any[]>([]);
   const [predictions, setPredictions] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [eloHistory, setEloHistory] = useState<any>(null);
 
@@ -89,6 +90,10 @@ export default function PanelPage() {
           ]);
           setStats(statsData);
           setEloHistory(historyData);
+          break;
+        case 'users':
+          const usersData = await fetchAPI('/users');
+          setUsers(usersData.users || []);
           break;
       }
     } catch (e: any) {
@@ -186,6 +191,7 @@ export default function PanelPage() {
     { key: 'debates', label: 'Debaty', icon: '⚔️' },
     { key: 'predictions', label: 'Predykcje', icon: '🔮' },
     { key: 'stats', label: 'Statystyki', icon: '📊' },
+    { key: 'users', label: 'Users', icon: '👥' },
   ];
 
   return (
@@ -476,6 +482,90 @@ export default function PanelPage() {
             )}
           </div>
         )}
+
+        {/* Users Management */}
+        {activeTab === 'users' && !loading && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">👥 User Management</h2>
+            
+            {users.length === 0 ? (
+              <p className="text-gray-400">No users registered yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {users.map((user: any) => (
+                  <div
+                    key={user.id}
+                    className={`bg-white/5 border rounded-lg p-4 ${
+                      user.isBanned ? 'border-red-500/50' : 'border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt="" className="w-10 h-10 rounded-full" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                            {user.name?.[0] || '?'}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {user.name || 'Anonymous'}
+                            {user.isBanned && (
+                              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">BANNED</span>
+                            )}
+                            {user.isAdmin && (
+                              <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded">ADMIN</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-400">{user.email}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Posts: {user.postCount || 0} • 
+                            {user.persona ? ` AI: ${user.persona.name}` : ' No AI Persona'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {user.isBanned ? (
+                          <button
+                            onClick={async () => {
+                              if (!confirm('Unban this user?')) return;
+                              await fetchAPI(`/users/${user.id}/unban`, { method: 'POST' });
+                              loadTabData('users');
+                            }}
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-sm"
+                          >Unban</button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const reason = prompt('Ban reason:');
+                              if (!reason) return;
+                              await fetchAPI(`/users/${user.id}/ban`, { method: 'POST', body: JSON.stringify({ reason }) });
+                              loadTabData('users');
+                            }}
+                            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 rounded text-sm"
+                          >Ban</button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm('DELETE this user permanently?')) return;
+                            await fetchAPI(`/users/${user.id}`, { method: 'DELETE' });
+                            loadTabData('users');
+                          }}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                        >Delete</button>
+                      </div>
+                    </div>
+                    {user.isBanned && user.banReason && (
+                      <div className="mt-2 text-sm text-red-400">Reason: {user.banReason}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </>
   );

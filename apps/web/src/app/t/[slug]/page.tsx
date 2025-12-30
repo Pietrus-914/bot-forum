@@ -144,6 +144,11 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
         </div>
       </div>
 
+      {/* Reply Form */}
+      <div className="mb-6">
+        <ReplyForm threadId={thread.id} />
+      </div>
+
       {/* Posts */}
       <div className="space-y-4">
         {posts.map((post: any, index: number) => {
@@ -229,14 +234,9 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
           );
         })}
       </div>
-
-      {/* Reply Form */}
-      <div className="mt-6">
-        <ReplyForm threadId={thread.id} />
-      </div>
       {/* Footer */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-6 text-center text-sm text-gray-500">
-        🤖 All responses are AI-generated for educational purposes
+        🤖 AI responses are generated for educational purposes • Humans can join the discussion!
       </div>
     </div>
     </>

@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { db } from '../db/client.js';
 import { 
-  personas, teams, threads, debates, posts, categories,
+  personas, teams, threads, debates, posts, categories, users, userPersonas, userPosts,
   eloHistory, predictionVerifications 
 } from '../db/schema.js';
-import { eq, desc, sql, gte } from 'drizzle-orm';
+import { eq, desc, sql, gte, count } from 'drizzle-orm';
 
 export const panelRoutes = new Hono();
 
@@ -342,4 +342,117 @@ panelRoutes.get('/stats', async (c) => {
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
+});
+
+// ==========================================
+// ADMIN USER MANAGEMENT
+// ==========================================
+
+
+// List all users
+panelRoutes.get('/users', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const allUsers = await db.select({
+    id: users.id,
+    email: users.email,
+    name: users.name,
+    avatar: users.avatar,
+    isAdmin: users.isAdmin,
+    isBanned: users.isBanned,
+    banReason: users.banReason,
+    createdAt: users.createdAt,
+    lastPostAt: users.lastPostAt,
+  })
+  .from(users)
+  .orderBy(desc(users.createdAt))
+  .limit(100);
+
+  // Get post counts for each user
+  const usersWithStats = await Promise.all(
+    allUsers.map(async (user) => {
+      const [postCount] = await db.select({ count: count() })
+        .from(userPosts)
+        .where(eq(userPosts.userId, user.id));
+      
+      const [persona] = await db.select({ name: userPersonas.name, isActive: userPersonas.isActive })
+        .from(userPersonas)
+        .where(eq(userPersonas.userId, user.id))
+        .limit(1);
+
+      return {
+        ...user,
+        postCount: postCount?.count || 0,
+        persona: persona || null,
+      };
+    })
+  );
+
+  return c.json({ users: usersWithStats });
+});
+
+// Ban user
+panelRoutes.post('/users/:id/ban', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const userId = c.req.param('id');
+  const { reason } = await c.req.json();
+
+  const [user] = await db.update(users)
+    .set({ 
+      isBanned: true, 
+      banReason: reason || 'Violation of community guidelines',
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+
+  // Deactivate user's AI persona
+  await db.update(userPersonas)
+    .set({ isActive: false })
+    .where(eq(userPersonas.userId, userId));
+
+  return c.json({ success: true, user });
+});
+
+// Unban user
+panelRoutes.post('/users/:id/unban', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const userId = c.req.param('id');
+
+  const [user] = await db.update(users)
+    .set({ 
+      isBanned: false, 
+      banReason: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+
+  return c.json({ success: true, user });
+});
+
+// Delete user
+panelRoutes.delete('/users/:id', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const userId = c.req.param('id');
+
+  // Delete user (cascades to personas and posts)
+  await db.delete(users).where(eq(users.id, userId));
+
+  return c.json({ success: true });
 });

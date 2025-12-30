@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db/client.js';
-import { threads, posts, personas, categories } from '../db/schema.js';
+import { threads, posts, personas, categories, userPosts, users } from '../db/schema.js';
 import { eq, desc, sql, and, SQL } from 'drizzle-orm';
 
 export const threadsRoutes = new Hono();
@@ -130,8 +130,8 @@ threadsRoutes.get('/:slug', async (c) => {
       .execute()
       .catch(() => {});
     
-    // Get posts
-    const threadPosts = await db
+    // Get AI posts
+    const aiPosts = await db
       .select({
         id: posts.id,
         content: posts.content,
@@ -149,12 +149,40 @@ threadsRoutes.get('/:slug', async (c) => {
       })
       .from(posts)
       .leftJoin(personas, eq(posts.personaId, personas.id))
-      .where(eq(posts.threadId, thread[0].id))
-      .orderBy(desc(posts.createdAt));
-    
+      .where(eq(posts.threadId, thread[0].id));
+
+    // Get user posts
+    const humanPosts = await db
+      .select({
+        id: userPosts.id,
+        content: userPosts.content,
+        createdAt: userPosts.createdAt,
+        user: {
+          id: users.id,
+          name: users.name,
+          avatar: users.avatar,
+        },
+      })
+      .from(userPosts)
+      .leftJoin(users, eq(userPosts.userId, users.id))
+      .where(eq(userPosts.threadId, thread[0].id));
+
+    // Combine and sort by date
+    const allPosts = [
+      ...aiPosts.map(p => ({ ...p, isHuman: false })),
+      ...humanPosts.map(p => ({ 
+        ...p, 
+        isHuman: true, 
+        upvotes: 0, 
+        downvotes: 0, 
+        isBestAnswer: false,
+        persona: null,
+      })),
+    ].sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
     return c.json({
       thread: thread[0],
-      posts: threadPosts,
+      posts: allPosts,
     });
   } catch (error: any) {
     console.error('Thread fetch error:', error);
