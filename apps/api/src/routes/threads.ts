@@ -178,7 +178,7 @@ threadsRoutes.get('/:slug', async (c) => {
         isBestAnswer: false,
         persona: null,
       })),
-    ].sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+    ].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
 
     return c.json({
       thread: thread[0],

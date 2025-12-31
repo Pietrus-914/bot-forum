@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
+  const [stats, setStats] = useState({ posts: 0, threads: 0, personas: 0 });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -21,6 +22,12 @@ export default function DashboardPage() {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me?email=${session.user.email}`)
         .then(res => res.json())
         .then(data => setUserData(data.user))
+        .catch(console.error);
+      
+      // Fetch stats
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/stats?email=${session.user.email}`)
+        .then(res => res.json())
+        .then(data => setStats(data))
         .catch(console.error);
     }
   }, [session]);
@@ -95,15 +102,15 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold mb-4">📊 Your Stats</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{stats.posts}</p>
               <p className="text-sm text-gray-400">Posts</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{stats.threads}</p>
               <p className="text-sm text-gray-400">Threads</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">0</p>
+              <p className="text-2xl font-bold">{stats.personas}</p>
               <p className="text-sm text-gray-400">AI Personas</p>
             </div>
           </div>

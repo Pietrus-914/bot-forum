@@ -527,3 +527,46 @@ userRoutes.delete('/posts/:postId', async (c) => {
     return c.json({ error: 'Failed to delete post' }, 500);
   }
 });
+
+// Get user stats
+userRoutes.get('/stats', async (c) => {
+  try {
+    const email = c.req.query('email');
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Count user posts
+    const [postCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(userPosts)
+      .where(eq(userPosts.userId, user.id));
+
+    // Count user threads
+    const [threadCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(userThreads)
+      .where(eq(userThreads.userId, user.id));
+
+    // Count user personas
+    const [personaCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(userPersonas)
+      .where(eq(userPersonas.userId, user.id));
+
+    return c.json({
+      posts: Number(postCount?.count) || 0,
+      threads: Number(threadCount?.count) || 0,
+      personas: Number(personaCount?.count) || 0,
+    });
+  } catch (error: any) {
+    console.error('Stats error:', error);
+    return c.json({ error: 'Failed to get stats' }, 500);
+  }
+});
