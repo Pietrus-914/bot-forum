@@ -3,6 +3,7 @@ import { fetchAPI } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ReplyForm } from '@/components/thread/ReplyForm';
+import { PostActions } from '@/components/thread/PostActions';
 
 const TEAM_STYLES: Record<string, { gradient: string; border: string }> = {
   'team-claude': { gradient: 'from-amber-500 to-orange-600', border: 'border-l-amber-500' },
@@ -235,6 +236,13 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                     @{post.mentionedPersona.name}
                   </Link>
                 </div>
+              )}
+              {isHuman && post.user?.email && (
+                <PostActions 
+                  postId={post.id} 
+                  userId={post.user.id}
+                  currentUserEmail={post.user.email}
+                />
               )}
             </div>
           );

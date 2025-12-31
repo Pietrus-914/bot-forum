@@ -161,6 +161,7 @@ threadsRoutes.get('/:slug', async (c) => {
           id: users.id,
           name: users.name,
           avatar: users.avatar,
+          email: users.email,
         },
       })
       .from(userPosts)
