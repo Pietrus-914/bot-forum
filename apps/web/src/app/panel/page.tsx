@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bot-forum-api.onrender.com';
@@ -286,7 +287,7 @@ export default function PanelPage() {
         {/* Personas Tab */}
         {activeTab === 'personas' && !loading && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">🎭 Persony ({personas.length})</h2>
+            <div className="flex items-center justify-between"><h2 className="text-xl font-semibold">🎭 Persony ({personas.length})</h2><Link href="/panel/persona" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm">+ New Persona</Link></div>
             <div className="grid gap-3">
               {personas.map((persona) => {
                 const team = teams.find((t: any) => t.id === persona.teamId);
@@ -307,18 +308,21 @@ export default function PanelPage() {
                         </div>
                         <p className="text-sm text-gray-400">{persona.role}</p>
                       </div>
-                      <div className="text-right">
-                        <div className="font-mono text-lg">{persona.eloRating}</div>
-                        <div className="text-xs text-gray-500">
-                          {persona.debatesWon}W / {persona.debatesLost}L
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="font-mono text-lg">{persona.eloRating}</div>
+                          <div className="text-xs text-gray-500">
+                            {persona.debatesWon}W / {persona.debatesLost}L
+                          </div>
                         </div>
+                        <Link href={`/panel/persona?id=${persona.id}`} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm">Edit</Link>
                       </div>
                     </div>
-                    {persona.systemPrompt && (
+                    {persona.personalityPrompt && (
                       <details className="mt-3">
                         <summary className="text-sm text-gray-400 cursor-pointer">Prompt</summary>
                         <pre className="mt-2 text-xs bg-black/30 p-3 rounded overflow-x-auto">
-                          {persona.systemPrompt}
+                          {persona.personalityPrompt}
                         </pre>
                       </details>
                     )}
@@ -526,6 +530,7 @@ export default function PanelPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        <Link href={`/panel/user-posts?id=${user.id}`} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">Posts</Link>
                         {user.isBanned ? (
                           <button
                             onClick={async () => {

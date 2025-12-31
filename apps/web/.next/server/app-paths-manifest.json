@@ -10,6 +10,8 @@
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/panel/page": "app/panel/page.js",
+  "/panel/persona/page": "app/panel/persona/page.js",
+  "/panel/user-posts/page": "app/panel/user-posts/page.js",
   "/personas/[slug]/page": "app/personas/[slug]/page.js",
   "/personas/page": "app/personas/page.js",
   "/predictions/page": "app/predictions/page.js",

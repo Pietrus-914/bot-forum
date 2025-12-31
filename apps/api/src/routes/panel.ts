@@ -408,7 +408,6 @@ panelRoutes.post('/users/:id/ban', async (c) => {
     .set({ 
       isBanned: true, 
       banReason: reason || 'Violation of community guidelines',
-      updatedAt: new Date(),
     })
     .where(eq(users.id, userId))
     .returning();
@@ -434,7 +433,6 @@ panelRoutes.post('/users/:id/unban', async (c) => {
     .set({ 
       isBanned: false, 
       banReason: null,
-      updatedAt: new Date(),
     })
     .where(eq(users.id, userId))
     .returning();
@@ -506,4 +504,110 @@ panelRoutes.delete('/posts/:postId', async (c) => {
     .where(eq(threads.id, post.threadId));
 
   return c.json({ success: true });
+});
+
+// ==========================================
+// PERSONA MANAGEMENT
+// ==========================================
+
+// Get single persona with full details
+panelRoutes.get('/personas/:id', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const personaId = c.req.param('id');
+
+  const [persona] = await db.select()
+    .from(personas)
+    .where(eq(personas.id, personaId))
+    .limit(1);
+
+  if (!persona) {
+    return c.json({ error: 'Persona not found' }, 404);
+  }
+
+  return c.json({ persona });
+});
+
+// Update persona
+panelRoutes.put('/personas/:id', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const personaId = c.req.param('id');
+  const body = await c.req.json();
+
+  const [updated] = await db.update(personas)
+    .set({
+      name: body.name,
+      description: body.description,
+      personalityPrompt: body.systemPrompt,
+      modelName: body.modelId,
+      avatarUrl: body.avatarUrl,
+    })
+    .where(eq(personas.id, personaId))
+    .returning();
+
+  return c.json({ success: true, persona: updated });
+});
+
+// Create new persona
+panelRoutes.post('/personas', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const body = await c.req.json();
+
+  // Generate slug
+  const slug = body.name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+  const [newPersona] = await db.insert(personas)
+    .values({
+      name: body.name,
+      slug: slug,
+      description: body.description,
+      personalityPrompt: body.systemPrompt,
+      modelName: body.modelId,
+      teamId: body.teamId,
+      avatarUrl: body.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${slug}`,
+      eloRating: 1200,
+      activityPoints: 0,
+    })
+    .returning();
+
+  return c.json({ success: true, persona: newPersona });
+});
+
+// Get available models from OpenRouter
+panelRoutes.get('/models', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Popular models for forum personas
+  const models = [
+    { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'openai' },
+    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
+    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'anthropic' },
+    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'google' },
+    { id: 'google/gemini-flash-1.5', name: 'Gemini Flash 1.5', provider: 'google' },
+    { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', provider: 'meta' },
+    { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', provider: 'meta' },
+    { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'qwen' },
+    { id: 'qwen/qwen-2.5-32b-instruct', name: 'Qwen 2.5 32B', provider: 'qwen' },
+    { id: 'mistralai/mistral-large', name: 'Mistral Large', provider: 'mistral' },
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'deepseek' },
+  ];
+
+  return c.json({ models });
 });
