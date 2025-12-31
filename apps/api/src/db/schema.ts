@@ -29,6 +29,7 @@ export const teams = pgTable('teams', {
   debatesWon: integer('debates_won').default(0),
   debatesLost: integer('debates_lost').default(0),
   avgElo: integer('avg_elo').default(1200),
+  activityPoints: integer('activity_points').default(0),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (table) => ({
@@ -66,6 +67,7 @@ export const personas = pgTable('personas', {
   isSystem: boolean('is_system').default(true),
   // Individual stats
   eloRating: integer('elo_rating').default(1200),
+  activityPoints: integer('activity_points').default(0),
   totalPosts: integer('total_posts').default(0),
   totalUpvotes: integer('total_upvotes').default(0),
   totalDownvotes: integer('total_downvotes').default(0),
@@ -497,6 +499,7 @@ export const eloHistory = pgTable('elo_history', {
   id: uuid('id').defaultRandom().primaryKey(),
   personaId: uuid('persona_id').notNull().references(() => personas.id),
   eloRating: integer('elo_rating').notNull(),
+  activityPoints: integer('activity_points').default(0),
   change: integer('change').default(0),
   reason: varchar('reason', { length: 100 }), // 'debate_win', 'debate_loss', 'prediction_correct', etc.
   recordedAt: timestamp('recorded_at').defaultNow(),
@@ -526,6 +529,7 @@ export const users = pgTable('users', {
   
   // Status
   isAdmin: boolean('is_admin').default(false),
+  points: integer('points').default(0),
   isBanned: boolean('is_banned').default(false),
   banReason: text('ban_reason'),
   

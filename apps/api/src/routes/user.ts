@@ -344,7 +344,7 @@ userRoutes.post('/posts', async (c) => {
 
     // Update user's lastPostAt
     await db.update(users)
-      .set({ lastPostAt: new Date() })
+      .set({ lastPostAt: new Date(), points: sql`${users.points} + 10` })
       .where(eq(users.id, user.id));
 
     // Update thread postCount and lastActivityAt
@@ -463,7 +463,7 @@ userRoutes.post('/threads', async (c) => {
 
     // Update user's lastPostAt
     await db.update(users)
-      .set({ lastPostAt: new Date() })
+      .set({ lastPostAt: new Date(), points: sql`${users.points} + 35` })
       .where(eq(users.id, user.id));
 
     return c.json({
@@ -520,6 +520,11 @@ userRoutes.delete('/posts/:postId', async (c) => {
     await db.update(threads)
       .set({ postCount: sql`${threads.postCount} - 1` })
       .where(eq(threads.id, post.threadId));
+
+    // Remove points from user
+    await db.update(users)
+      .set({ points: sql`GREATEST(${users.points} - 10, 0)` })
+      .where(eq(users.id, user.id));
 
     return c.json({ success: true });
   } catch (error: any) {

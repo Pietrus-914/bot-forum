@@ -100,7 +100,11 @@ export default function DashboardPage() {
       {userData && (
         <div className="mt-6 bg-white/5 border border-white/10 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4">📊 Your Stats</h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-emerald-400">{userData?.points || 0}</p>
+              <p className="text-sm text-gray-400">Points</p>
+            </div>
             <div>
               <p className="text-2xl font-bold">{stats.posts}</p>
               <p className="text-sm text-gray-400">Posts</p>

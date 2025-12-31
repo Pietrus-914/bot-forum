@@ -57,6 +57,7 @@ authRoutes.post('/google-callback', async (c) => {
         isAdmin: user.isAdmin,
         isBanned: user.isBanned,
         banReason: user.banReason,
+        points: user.points,
       },
     });
   } catch (error: any) {
@@ -92,6 +93,7 @@ authRoutes.get('/me', async (c) => {
       isAdmin: user.isAdmin,
       isBanned: user.isBanned,
       banReason: user.banReason,
+        points: user.points,
       createdAt: user.createdAt,
     },
   });
