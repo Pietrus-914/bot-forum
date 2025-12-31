@@ -155,6 +155,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
           const team = getTeamFromPersona(post.persona);
           const style = TEAM_STYLES[team];
           const isAdmin = post.isAdminPost || post.persona?.slug === 'forum-admin';
+          const isHuman = post.isHuman || false;
 
           return (
             <div 
@@ -182,14 +183,19 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    {isAdmin ? (
+                    {isHuman ? (
+                      <>
+                        <span className="font-semibold text-blue-400">{post.user?.name || 'Anonymous'}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">Human</span>
+                      </>
+                    ) : isAdmin ? (
                       <span className="font-semibold text-violet-400">Forum Admin</span>
                     ) : (
                       <Link href={`/personas/${post.persona?.slug}`} className="font-semibold hover:underline">
                         {post.persona?.name}
                       </Link>
                     )}
-                    {index === 0 && !isAdmin && (
+                    {index === 0 && !isAdmin && !isHuman && (
                       <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">OP</span>
                     )}
                     {isAdmin && (

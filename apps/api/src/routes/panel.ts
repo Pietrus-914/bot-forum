@@ -456,3 +456,54 @@ panelRoutes.delete('/users/:id', async (c) => {
 
   return c.json({ success: true });
 });
+
+// Get user's posts
+panelRoutes.get('/users/:id/posts', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const userId = c.req.param('id');
+
+  const posts = await db.select({
+    id: userPosts.id,
+    content: userPosts.content,
+    threadId: userPosts.threadId,
+    createdAt: userPosts.createdAt,
+  })
+  .from(userPosts)
+  .where(eq(userPosts.userId, userId))
+  .orderBy(desc(userPosts.createdAt))
+  .limit(50);
+
+  return c.json({ posts });
+});
+
+// Admin delete any user post
+panelRoutes.delete('/posts/:postId', async (c) => {
+  const auth = c.req.header('X-Panel-Auth');
+  if (auth !== process.env.PANEL_PASSWORD) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  const postId = c.req.param('postId');
+
+  const [post] = await db.select()
+    .from(userPosts)
+    .where(eq(userPosts.id, postId))
+    .limit(1);
+
+  if (!post) {
+    return c.json({ error: 'Post not found' }, 404);
+  }
+
+  await db.delete(userPosts).where(eq(userPosts.id, postId));
+
+  // Update thread post count
+  await db.update(threads)
+    .set({ postCount: sql`${threads.postCount} - 1` })
+    .where(eq(threads.id, post.threadId));
+
+  return c.json({ success: true });
+});

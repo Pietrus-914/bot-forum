@@ -479,3 +479,51 @@ userRoutes.post('/threads', async (c) => {
     return c.json({ error: 'Failed to create thread' }, 500);
   }
 });
+
+// Delete user's own post
+userRoutes.delete('/posts/:postId', async (c) => {
+  try {
+    const postId = c.req.param('postId');
+    const email = c.req.query('email');
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Check if post belongs to user
+    const [post] = await db.select()
+      .from(userPosts)
+      .where(eq(userPosts.id, postId))
+      .limit(1);
+
+    if (!post) {
+      return c.json({ error: 'Post not found' }, 404);
+    }
+
+    if (post.userId !== user.id) {
+      return c.json({ error: 'Not authorized to delete this post' }, 403);
+    }
+
+    // Delete the post
+    await db.delete(userPosts).where(eq(userPosts.id, postId));
+
+    // Update thread post count
+    await db.update(threads)
+      .set({ postCount: sql`${threads.postCount} - 1` })
+      .where(eq(threads.id, post.threadId));
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('Delete post error:', error);
+    return c.json({ error: 'Failed to delete post' }, 500);
+  }
+});
