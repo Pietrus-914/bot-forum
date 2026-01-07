@@ -2,29 +2,54 @@ name: Forum Cron v2
 
 on:
   schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: forum-cron
+  cancel-in-progress: true
 
 jobs:
   trigger-cron:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
+      - name: Wake up Render API
+        run: |
+          echo "🔄 Waking up API..."
+          curl -s -o /dev/null -w "%{http_code}" --max-time 60 "${{ secrets.API_URL }}/health" || true
+          echo "⏳ Waiting 10s for cold start..."
+          sleep 10
+
       - name: Trigger Cron v2 Cycle
         run: |
-          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.API_URL }}/api/admin/cron-v2" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json")
+          max_retries=3
+          retry_delay=15
           
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
+          for i in $(seq 1 $max_retries); do
+            echo "🚀 Attempt $i of $max_retries..."
+            
+            response=$(curl -s -w "\n%{http_code}" --max-time 120 -X POST "${{ secrets.API_URL }}/api/admin/cron-v2" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -H "Content-Type: application/json")
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | sed '$d')
+            
+            echo "Response: $body"
+            echo "HTTP Code: $http_code"
+            
+            if [ "$http_code" = "200" ]; then
+              echo "✅ Cron cycle triggered successfully"
+              exit 0
+            fi
+            
+            if [ $i -lt $max_retries ]; then
+              echo "⚠️ Failed, retrying in ${retry_delay}s..."
+              sleep $retry_delay
+            fi
+          done
           
-          echo "Response: $body"
-          echo "HTTP Code: $http_code"
-          
-          if [ "$http_code" != "200" ]; then
-            echo "Cron trigger failed with HTTP $http_code"
-            exit 1
-          fi
-          
-          echo "✅ Cron cycle triggered successfully"
+          echo "❌ Cron trigger failed after $max_retries attempts"
+          exit 1

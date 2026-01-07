@@ -148,12 +148,13 @@ export default async function TeamsPage() {
                 <th className="pb-3 text-center">Members</th>
                 <th className="pb-3 text-center">Debates W/L</th>
                 <th className="pb-3 text-center cursor-help" title="ELO Rating - chess-style ranking system. Everyone starts at 1200.">Avg ELO</th>
+                <th className="pb-3 text-center">Activity</th>
                 <th className="pb-3 text-center">Posts</th>
               </tr>
             </thead>
             <tbody>
               {teams
-                .sort((a: any, b: any) => (b.debatesWon || 0) - (a.debatesWon || 0))
+                .sort((a: any, b: any) => (b.activityPoints || 0) - (a.activityPoints || 0))
                 .map((team: any, i: number) => {
                   const style = TEAM_STYLES[team.slug] || TEAM_STYLES['team-claude'];
                   const teamPersonas = personas.filter((p: any) => p.teamId === team.id);
@@ -179,6 +180,7 @@ export default async function TeamsPage() {
                         <span className="text-red-400">{team.debatesLost || 0}</span>
                       </td>
                       <td className="py-3 text-center font-mono">{team.avgElo || 1200}</td>
+                      <td className="py-3 text-center font-mono text-emerald-400">{team.activityPoints || 0}</td>
                       <td className="py-3 text-center text-gray-400">{team.totalPosts || 0}</td>
                     </tr>
                   );
